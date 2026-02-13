@@ -118,6 +118,24 @@
     </div>
   </div>
 
+  <!-- User Search Modal -->
+  <div id="userSearchModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🔍 Benutzer suchen</h2>
+        <button class="close-btn" onclick="closeUserSearch()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <input id="userSearchInput" type="text" placeholder="@username suchen..." oninput="filterUsers()">
+        </div>
+        <div id="userList" class="user-list">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="firebase.js"></script>
 </body>
 </html>
