@@ -19,6 +19,7 @@ export const db = getFirestore(app);
 let unsubscribe;
 let currentUserData = null;
 const userCache = {}; // Cache für Usernames
+let currentTab = 'groups'; // Track current tab
 
 // Screen Management
 function showScreen(screenId) {
@@ -30,6 +31,24 @@ function showScreen(screenId) {
 
 window.showLogin = () => showScreen('loginScreen');
 window.showRegister = () => showScreen('registerScreen');
+
+// Tab Switching
+window.switchTab = (tabName) => {
+  currentTab = tabName;
+  
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.closest('.tab-btn').classList.add('active');
+  
+  // Update tab content
+  document.getElementById('groupsTab').classList.toggle('hidden', tabName !== 'groups');
+  document.getElementById('directTab').classList.toggle('hidden', tabName !== 'direct');
+};
+
+// User Search (Placeholder for next step)
+window.showUserSearch = () => {
+  alert('Benutzer-Suche kommt im nächsten Schritt! 🚀');
+};
 
 // Error Display
 function showError(elementId, message) {
@@ -128,7 +147,7 @@ window.setUsername = async () => {
     currentUserData = { username };
     showScreen('chatScreen');
     loadMessages();
-    document.getElementById('userInfo').textContent = `Eingeloggt als: @${username}`;
+    document.getElementById('userInfo').textContent = `@${username}`;
     
   } catch (e) {
     showError('usernameError', 'Fehler beim Speichern: ' + e.message);
@@ -140,6 +159,7 @@ window.logout = async () => {
   if (unsubscribe) unsubscribe();
   await signOut(auth);
   currentUserData = null;
+  currentTab = 'groups';
   Object.keys(userCache).forEach(key => delete userCache[key]);
 };
 
@@ -226,7 +246,7 @@ onAuthStateChanged(auth, async (user) => {
       currentUserData = userData;
       showScreen('chatScreen');
       loadMessages();
-      document.getElementById('userInfo').textContent = `Eingeloggt als: @${userData.username}`;
+      document.getElementById('userInfo').textContent = `@${userData.username}`;
     } else {
       // Kein Username - Username-Setup anzeigen
       showScreen('usernameScreen');
