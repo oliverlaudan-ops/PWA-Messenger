@@ -101,12 +101,28 @@
 
       <!-- Direct Messages Tab Content -->
       <div id="directTab" class="tab-content hidden">
-        <div class="content">
+        <!-- DM User List View -->
+        <div id="dmListView" class="content">
           <div class="dm-placeholder">
             <div class="placeholder-icon">💬</div>
             <h3>Direktnachrichten</h3>
             <p>Wähle einen Benutzer aus, um einen Chat zu starten.</p>
             <button class="btn btn-primary" onclick="showUserSearch()">Benutzer suchen</button>
+          </div>
+        </div>
+
+        <!-- DM Chat View -->
+        <div id="dmChatView" class="content hidden">
+          <div class="chat-header dm-chat-header">
+            <button class="back-btn" onclick="closeDMChat()">←</button>
+            <div class="dm-chat-info">
+              <h3 id="dmChatUsername"></h3>
+            </div>
+          </div>
+          <div id="dmMessages"></div>
+          <div class="input-group">
+            <input id="dmMessageInput" type="text" placeholder="Nachricht schreiben..." onkeypress="if(event.key==='Enter') sendDMMessage()">
+            <button class="btn btn-primary" onclick="sendDMMessage()">Senden</button>
           </div>
         </div>
       </div>
