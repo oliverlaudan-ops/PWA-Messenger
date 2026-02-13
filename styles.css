@@ -178,7 +178,48 @@ input[type="password"]:focus {
   font-weight: 600;
 }
 
-#messages {
+/* DM Chat Header */
+.dm-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-btn {
+  background: white;
+  border: 2px solid #e0e0e0;
+  color: #667eea;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.back-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.dm-chat-info {
+  flex: 1;
+}
+
+.dm-chat-info h3 {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+}
+
+#messages,
+#dmMessages {
   height: 350px;
   overflow-y: auto;
   border: 2px solid #e0e0e0;
@@ -442,7 +483,8 @@ input[type="password"]:focus {
     padding: 20px;
   }
   
-  #messages {
+  #messages,
+  #dmMessages {
     height: 300px;
   }
   
