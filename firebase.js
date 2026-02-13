@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDoc, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBlZRSrjkYYP8KtycZOah8fX-RMMnYYPj4",
@@ -302,40 +302,63 @@ window.sendMessage = async () => {
   }
 };
 
-// Load Messages
+// Load Messages - Optimized to only add new messages
 function loadMessages() {
-  const q = query(collection(db, 'messages'), orderBy('createdAt'));
+  // Lade initial die letzten 50 Nachrichten
+  const q = query(collection(db, 'messages'), orderBy('createdAt'), limit(50));
+  
   unsubscribe = onSnapshot(q, async (snapshot) => {
     const msgs = document.getElementById('messages');
-    msgs.innerHTML = '';
     
-    for (const docSnap of snapshot.docs) {
-      const data = docSnap.data();
-      const div = document.createElement('div');
-      div.className = 'message';
-      
-      // Username anzeigen (aus Nachricht oder aus Cache laden)
-      let username = data.username || 'Unbekannt';
-      if (!data.username && data.uid) {
-        const userData = await loadUserData(data.uid);
-        username = userData?.username || data.uid.slice(0, 8);
+    // Bei erstem Load alle Nachrichten laden
+    if (msgs.children.length === 0) {
+      msgs.innerHTML = '';
+      for (const docSnap of snapshot.docs) {
+        await appendMessage(docSnap);
       }
-      
-      const usernameSpan = document.createElement('span');
-      usernameSpan.className = 'username';
-      usernameSpan.textContent = `@${username}`;
-      
-      const textSpan = document.createElement('span');
-      textSpan.className = 'text';
-      textSpan.textContent = data.text;
-      
-      div.appendChild(usernameSpan);
-      div.appendChild(textSpan);
-      msgs.appendChild(div);
+    } else {
+      // Nur neue Nachrichten hinzufügen
+      snapshot.docChanges().forEach(async (change) => {
+        if (change.type === 'added') {
+          // Prüfe ob Nachricht schon existiert
+          if (!document.querySelector(`[data-msg-id="${change.doc.id}"]`)) {
+            await appendMessage(change.doc);
+          }
+        }
+      });
     }
     
     msgs.scrollTop = msgs.scrollHeight;
   });
+}
+
+// Helper function to append a single message
+async function appendMessage(docSnap) {
+  const data = docSnap.data();
+  const div = document.createElement('div');
+  div.className = 'message';
+  div.setAttribute('data-msg-id', docSnap.id);
+  
+  // Username anzeigen (aus Nachricht oder aus Cache laden)
+  let username = data.username || 'Unbekannt';
+  if (!data.username && data.uid) {
+    const userData = await loadUserData(data.uid);
+    username = userData?.username || data.uid.slice(0, 8);
+  }
+  
+  const usernameSpan = document.createElement('span');
+  usernameSpan.className = 'username';
+  usernameSpan.textContent = `@${username}`;
+  
+  const textSpan = document.createElement('span');
+  textSpan.className = 'text';
+  textSpan.textContent = data.text;
+  
+  div.appendChild(usernameSpan);
+  div.appendChild(textSpan);
+  
+  const msgs = document.getElementById('messages');
+  msgs.appendChild(div);
 }
 
 // Auth State Observer
