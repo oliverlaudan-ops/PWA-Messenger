@@ -20,6 +20,7 @@ let unsubscribe;
 let currentUserData = null;
 const userCache = {}; // Cache für Usernames
 let currentTab = 'groups'; // Track current tab
+let allUsers = []; // Store all users for filtering
 
 // Screen Management
 function showScreen(screenId) {
@@ -45,10 +46,111 @@ window.switchTab = (tabName) => {
   document.getElementById('directTab').classList.toggle('hidden', tabName !== 'direct');
 };
 
-// User Search (Placeholder for next step)
-window.showUserSearch = () => {
-  alert('Benutzer-Suche kommt im nächsten Schritt! 🚀');
+// User Search Modal
+window.showUserSearch = async () => {
+  const modal = document.getElementById('userSearchModal');
+  modal.classList.remove('hidden');
+  
+  const userList = document.getElementById('userList');
+  userList.innerHTML = '<div class="spinner"></div>';
+  
+  // Load all users
+  await loadAllUsers();
+  renderUserList(allUsers);
+  
+  // Focus search input
+  document.getElementById('userSearchInput').value = '';
+  document.getElementById('userSearchInput').focus();
 };
+
+window.closeUserSearch = () => {
+  document.getElementById('userSearchModal').classList.add('hidden');
+};
+
+// Load all users from Firestore
+async function loadAllUsers() {
+  try {
+    const usersQuery = query(collection(db, 'users'), orderBy('username'));
+    const snapshot = await getDocs(usersQuery);
+    
+    allUsers = [];
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      // Nicht sich selbst anzeigen
+      if (docSnap.id !== auth.currentUser.uid) {
+        allUsers.push({
+          uid: docSnap.id,
+          username: data.username,
+          email: data.email
+        });
+      }
+    });
+  } catch (e) {
+    console.error('Error loading users:', e);
+  }
+}
+
+// Render user list
+function renderUserList(users) {
+  const userList = document.getElementById('userList');
+  
+  if (users.length === 0) {
+    userList.innerHTML = '<div class="no-users">Keine Benutzer gefunden</div>';
+    return;
+  }
+  
+  userList.innerHTML = '';
+  users.forEach(user => {
+    const userItem = document.createElement('div');
+    userItem.className = 'user-item';
+    userItem.onclick = () => startDirectMessage(user);
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'user-avatar';
+    avatar.textContent = user.username.charAt(0).toUpperCase();
+    
+    const details = document.createElement('div');
+    details.className = 'user-details';
+    
+    const username = document.createElement('div');
+    username.className = 'user-username';
+    username.textContent = `@${user.username}`;
+    
+    const email = document.createElement('div');
+    email.className = 'user-email';
+    email.textContent = user.email;
+    
+    details.appendChild(username);
+    details.appendChild(email);
+    userItem.appendChild(avatar);
+    userItem.appendChild(details);
+    userList.appendChild(userItem);
+  });
+}
+
+// Filter users based on search input
+window.filterUsers = () => {
+  const searchTerm = document.getElementById('userSearchInput').value.toLowerCase().trim();
+  
+  if (!searchTerm) {
+    renderUserList(allUsers);
+    return;
+  }
+  
+  const filtered = allUsers.filter(user => 
+    user.username.toLowerCase().includes(searchTerm) ||
+    user.email.toLowerCase().includes(searchTerm)
+  );
+  
+  renderUserList(filtered);
+};
+
+// Start direct message with user
+function startDirectMessage(user) {
+  closeUserSearch();
+  alert(`DM-Chat mit @${user.username} starten kommt im nächsten Schritt! 🚀`);
+  // Schritt 3 wird hier den Chat starten
+}
 
 // Error Display
 function showError(elementId, message) {
@@ -160,6 +262,7 @@ window.logout = async () => {
   await signOut(auth);
   currentUserData = null;
   currentTab = 'groups';
+  allUsers = [];
   Object.keys(userCache).forEach(key => delete userCache[key]);
 };
 
