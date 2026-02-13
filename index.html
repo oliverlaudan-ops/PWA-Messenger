@@ -5,38 +5,86 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PWA Messenger</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#2196F3">
-  <style>
-    body { font-family: Arial; max-width: 600px; margin: 0 auto; padding: 20px; }
-    #login { text-align: center; }
-    #chat { display: none; }
-    input, button { padding: 10px; margin: 5px; }
-    #messages { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
-    .message { margin: 5px 0; }
-  </style>
+  <link rel="stylesheet" href="styles.css">
+  <meta name="theme-color" content="#667eea">
 </head>
 <body>
-  <div id="login">
-    <h1>PWA Messenger</h1>
-    <input id="email" type="email" placeholder="E-Mail">
-    <input id="password" type="password" placeholder="Passwort">
-    <button onclick="signup()">Registrieren</button>
-    <button onclick="login()">Einloggen</button>
-  </div>
-  <div id="chat">
-    <h2>Öffentliche Test-Gruppe</h2>
-    <div id="messages"></div>
-    <input id="messageInput" placeholder="Nachricht...">
-    <button onclick="sendMessage()">Senden</button>
-    <button onclick="logout()">Logout</button>
+  <div class="container">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="hidden">
+      <div class="header">
+        <h1>🚀 PWA Messenger</h1>
+      </div>
+      <div class="content">
+        <div class="form-group">
+          <label for="loginEmail">E-Mail</label>
+          <input id="loginEmail" type="email" placeholder="deine@email.de">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Passwort</label>
+          <input id="loginPassword" type="password" placeholder="Mindestens 6 Zeichen">
+        </div>
+        <div id="loginError" class="error hidden"></div>
+        <button class="btn btn-primary" onclick="login()">Einloggen</button>
+        <button class="btn btn-secondary" onclick="showRegister()">Neues Konto erstellen</button>
+      </div>
+    </div>
+
+    <!-- Register Screen -->
+    <div id="registerScreen" class="hidden">
+      <div class="header">
+        <h1>🚀 Registrierung</h1>
+      </div>
+      <div class="content">
+        <div class="form-group">
+          <label for="registerEmail">E-Mail</label>
+          <input id="registerEmail" type="email" placeholder="deine@email.de">
+        </div>
+        <div class="form-group">
+          <label for="registerPassword">Passwort</label>
+          <input id="registerPassword" type="password" placeholder="Mindestens 6 Zeichen">
+        </div>
+        <div id="registerError" class="error hidden"></div>
+        <button class="btn btn-primary" onclick="signup()">Registrieren</button>
+        <button class="btn btn-secondary" onclick="showLogin()">Zurück zum Login</button>
+      </div>
+    </div>
+
+    <!-- Username Setup Screen -->
+    <div id="usernameScreen" class="hidden">
+      <div class="header">
+        <h1>✨ Willkommen!</h1>
+      </div>
+      <div class="content">
+        <div class="info">
+          Wähle einen einzigartigen Benutzernamen. Dieser wird anderen Nutzern angezeigt.
+        </div>
+        <div class="form-group">
+          <label for="usernameInput">Benutzername</label>
+          <input id="usernameInput" type="text" placeholder="z.B. coolername123" maxlength="20">
+        </div>
+        <div id="usernameError" class="error hidden"></div>
+        <button class="btn btn-primary" onclick="setUsername()">Bestätigen</button>
+      </div>
+    </div>
+
+    <!-- Chat Screen -->
+    <div id="chatScreen" class="hidden">
+      <div class="header">
+        <h1>💬 Öffentliche Test-Gruppe</h1>
+      </div>
+      <div class="content">
+        <div id="userInfo" class="info"></div>
+        <div id="messages"></div>
+        <div class="input-group">
+          <input id="messageInput" type="text" placeholder="Nachricht schreiben..." onkeypress="if(event.key==='Enter') sendMessage()">
+          <button class="btn btn-primary" onclick="sendMessage()">Senden</button>
+        </div>
+        <button class="btn btn-danger" onclick="logout()" style="margin-top: 20px;">Logout</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="firebase.js"></script>
-  <script>
-    // Nach Init: Chat laden wenn eingeloggt
-    window.addEventListener('load', () => {
-      if (auth.currentUser) showChat();
-    });
-  </script>
 </body>
 </html>
