@@ -17,10 +17,12 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 let unsubscribe;
+let dmUnsubscribe;
 let currentUserData = null;
-const userCache = {}; // Cache für Usernames
-let currentTab = 'groups'; // Track current tab
-let allUsers = []; // Store all users for filtering
+const userCache = {};
+let currentTab = 'groups';
+let allUsers = [];
+let currentDMUser = null; // Current DM chat partner
 
 // Screen Management
 function showScreen(screenId) {
@@ -54,11 +56,9 @@ window.showUserSearch = async () => {
   const userList = document.getElementById('userList');
   userList.innerHTML = '<div class="spinner"></div>';
   
-  // Load all users
   await loadAllUsers();
   renderUserList(allUsers);
   
-  // Focus search input
   document.getElementById('userSearchInput').value = '';
   document.getElementById('userSearchInput').focus();
 };
@@ -76,7 +76,6 @@ async function loadAllUsers() {
     allUsers = [];
     snapshot.forEach(docSnap => {
       const data = docSnap.data();
-      // Nicht sich selbst anzeigen
       if (docSnap.id !== auth.currentUser.uid) {
         allUsers.push({
           uid: docSnap.id,
@@ -145,12 +144,117 @@ window.filterUsers = () => {
   renderUserList(filtered);
 };
 
+// Create chat ID from two user IDs (always sorted)
+function createChatId(uid1, uid2) {
+  return [uid1, uid2].sort().join('_');
+}
+
 // Start direct message with user
 function startDirectMessage(user) {
   closeUserSearch();
-  alert(`DM-Chat mit @${user.username} starten kommt im nächsten Schritt! 🚀`);
-  // Schritt 3 wird hier den Chat starten
+  currentDMUser = user;
+  
+  // Show DM chat view
+  document.getElementById('dmListView').classList.add('hidden');
+  document.getElementById('dmChatView').classList.remove('hidden');
+  document.getElementById('dmChatUsername').textContent = `👤 @${user.username}`;
+  
+  // Load DM messages
+  loadDMMessages(user.uid);
 }
+
+// Close DM chat and return to list
+window.closeDMChat = () => {
+  if (dmUnsubscribe) {
+    dmUnsubscribe();
+    dmUnsubscribe = null;
+  }
+  
+  currentDMUser = null;
+  document.getElementById('dmChatView').classList.add('hidden');
+  document.getElementById('dmListView').classList.remove('hidden');
+  document.getElementById('dmMessages').innerHTML = '';
+  document.getElementById('dmMessageInput').value = '';
+};
+
+// Load DM messages
+function loadDMMessages(otherUserId) {
+  const chatId = createChatId(auth.currentUser.uid, otherUserId);
+  const q = query(
+    collection(db, 'directMessages', chatId, 'messages'),
+    orderBy('createdAt'),
+    limit(50)
+  );
+  
+  dmUnsubscribe = onSnapshot(q, async (snapshot) => {
+    const msgs = document.getElementById('dmMessages');
+    
+    if (msgs.children.length === 0) {
+      msgs.innerHTML = '';
+      for (const docSnap of snapshot.docs) {
+        await appendDMMessage(docSnap);
+      }
+    } else {
+      snapshot.docChanges().forEach(async (change) => {
+        if (change.type === 'added') {
+          if (!document.querySelector(`[data-dm-msg-id="${change.doc.id}"]`)) {
+            await appendDMMessage(change.doc);
+          }
+        }
+      });
+    }
+    
+    msgs.scrollTop = msgs.scrollHeight;
+  });
+}
+
+// Append single DM message
+async function appendDMMessage(docSnap) {
+  const data = docSnap.data();
+  const div = document.createElement('div');
+  div.className = 'message';
+  div.setAttribute('data-dm-msg-id', docSnap.id);
+  
+  let username = data.username || 'Unbekannt';
+  if (!data.username && data.uid) {
+    const userData = await loadUserData(data.uid);
+    username = userData?.username || data.uid.slice(0, 8);
+  }
+  
+  const usernameSpan = document.createElement('span');
+  usernameSpan.className = 'username';
+  usernameSpan.textContent = `@${username}`;
+  
+  const textSpan = document.createElement('span');
+  textSpan.className = 'text';
+  textSpan.textContent = data.text;
+  
+  div.appendChild(usernameSpan);
+  div.appendChild(textSpan);
+  
+  const msgs = document.getElementById('dmMessages');
+  msgs.appendChild(div);
+}
+
+// Send DM Message
+window.sendDMMessage = async () => {
+  const text = document.getElementById('dmMessageInput').value.trim();
+  if (!text || !auth.currentUser || !currentUserData || !currentDMUser) return;
+  
+  try {
+    const chatId = createChatId(auth.currentUser.uid, currentDMUser.uid);
+    await addDoc(collection(db, 'directMessages', chatId, 'messages'), {
+      text,
+      uid: auth.currentUser.uid,
+      username: currentUserData.username,
+      createdAt: serverTimestamp()
+    });
+    document.getElementById('dmMessageInput').value = '';
+  } catch (e) {
+    console.error('Error sending DM:', e);
+    alert('Fehler beim Senden der Nachricht.');
+  }
+};
 
 // Error Display
 function showError(elementId, message) {
@@ -177,7 +281,6 @@ window.signup = async () => {
   
   try {
     await createUserWithEmailAndPassword(auth, email, password);
-    // Auth State Handler übernimmt
   } catch (e) {
     let message = 'Registrierung fehlgeschlagen.';
     if (e.code === 'auth/email-already-in-use') message = 'E-Mail bereits registriert.';
@@ -199,7 +302,6 @@ window.login = async () => {
   
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    // Auth State Handler übernimmt
   } catch (e) {
     let message = 'Login fehlgeschlagen.';
     if (e.code === 'auth/user-not-found') message = 'Benutzer nicht gefunden.';
@@ -230,7 +332,6 @@ window.setUsername = async () => {
   }
   
   try {
-    // Prüfen ob Username bereits existiert
     const usernameQuery = query(collection(db, 'users'), where('username', '==', username));
     const snapshot = await getDocs(usernameQuery);
     
@@ -239,7 +340,6 @@ window.setUsername = async () => {
       return;
     }
     
-    // User-Profil erstellen
     await setDoc(doc(db, 'users', auth.currentUser.uid), {
       username: username,
       email: auth.currentUser.email,
@@ -259,8 +359,10 @@ window.setUsername = async () => {
 // Logout
 window.logout = async () => {
   if (unsubscribe) unsubscribe();
+  if (dmUnsubscribe) dmUnsubscribe();
   await signOut(auth);
   currentUserData = null;
+  currentDMUser = null;
   currentTab = 'groups';
   allUsers = [];
   Object.keys(userCache).forEach(key => delete userCache[key]);
@@ -302,25 +404,21 @@ window.sendMessage = async () => {
   }
 };
 
-// Load Messages - Optimized to only add new messages
+// Load Messages
 function loadMessages() {
-  // Lade initial die letzten 50 Nachrichten
   const q = query(collection(db, 'messages'), orderBy('createdAt'), limit(50));
   
   unsubscribe = onSnapshot(q, async (snapshot) => {
     const msgs = document.getElementById('messages');
     
-    // Bei erstem Load alle Nachrichten laden
     if (msgs.children.length === 0) {
       msgs.innerHTML = '';
       for (const docSnap of snapshot.docs) {
         await appendMessage(docSnap);
       }
     } else {
-      // Nur neue Nachrichten hinzufügen
       snapshot.docChanges().forEach(async (change) => {
         if (change.type === 'added') {
-          // Prüfe ob Nachricht schon existiert
           if (!document.querySelector(`[data-msg-id="${change.doc.id}"]`)) {
             await appendMessage(change.doc);
           }
@@ -339,7 +437,6 @@ async function appendMessage(docSnap) {
   div.className = 'message';
   div.setAttribute('data-msg-id', docSnap.id);
   
-  // Username anzeigen (aus Nachricht oder aus Cache laden)
   let username = data.username || 'Unbekannt';
   if (!data.username && data.uid) {
     const userData = await loadUserData(data.uid);
@@ -364,22 +461,19 @@ async function appendMessage(docSnap) {
 // Auth State Observer
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    // User ist eingeloggt - prüfe ob Username existiert
     const userData = await loadUserData(user.uid);
     
     if (userData && userData.username) {
-      // Username existiert - direkt zum Chat
       currentUserData = userData;
       showScreen('chatScreen');
       loadMessages();
       document.getElementById('userInfo').textContent = `@${userData.username}`;
     } else {
-      // Kein Username - Username-Setup anzeigen
       showScreen('usernameScreen');
     }
   } else {
-    // User ist ausgeloggt
     if (unsubscribe) unsubscribe();
+    if (dmUnsubscribe) dmUnsubscribe();
     currentUserData = null;
     showScreen('loginScreen');
   }
