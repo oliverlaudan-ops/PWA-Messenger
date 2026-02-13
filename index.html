@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA Messenger</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2196F3">
+  <style>
+    body { font-family: Arial; max-width: 600px; margin: 0 auto; padding: 20px; }
+    #login { text-align: center; }
+    #chat { display: none; }
+    input, button { padding: 10px; margin: 5px; }
+    #messages { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
+    .message { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <div id="login">
+    <h1>PWA Messenger</h1>
+    <input id="email" type="email" placeholder="E-Mail">
+    <input id="password" type="password" placeholder="Passwort">
+    <button onclick="signup()">Registrieren</button>
+    <button onclick="login()">Einloggen</button>
+  </div>
+  <div id="chat">
+    <h2>Öffentliche Test-Gruppe</h2>
+    <div id="messages"></div>
+    <input id="messageInput" placeholder="Nachricht...">
+    <button onclick="sendMessage()">Senden</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <script type="module" src="firebase.js"></script>
+  <script>
+    // Nach Init: Chat laden wenn eingeloggt
+    window.addEventListener('load', () => {
+      if (auth.currentUser) showChat();
+    });
+  </script>
+</body>
+</html>
