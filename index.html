@@ -64,23 +64,56 @@
           <input id="usernameInput" type="text" placeholder="z.B. coolername123" maxlength="20">
         </div>
         <div id="usernameError" class="error hidden"></div>
-        <button class="btn btn-primary" onclick="setUsername()">Bestätigen</button>
+        <button class="btn btn-primary" onclick="setUsername()">​Bestätigen</button>
       </div>
     </div>
 
-    <!-- Chat Screen -->
+    <!-- Main Chat Screen with Tabs -->
     <div id="chatScreen" class="hidden">
       <div class="header">
-        <h1>💬 Öffentliche Test-Gruppe</h1>
+        <h1>💬 PWA Messenger</h1>
+        <div id="userInfo" class="user-info-header"></div>
       </div>
-      <div class="content">
-        <div id="userInfo" class="info"></div>
-        <div id="messages"></div>
-        <div class="input-group">
-          <input id="messageInput" type="text" placeholder="Nachricht schreiben..." onkeypress="if(event.key==='Enter') sendMessage()">
-          <button class="btn btn-primary" onclick="sendMessage()">Senden</button>
+      
+      <!-- Tab Navigation -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('groups')">
+          <span>👥</span> Gruppen
+        </button>
+        <button class="tab-btn" onclick="switchTab('direct')">
+          <span>💬</span> Direktnachrichten
+        </button>
+      </div>
+
+      <!-- Groups Tab Content -->
+      <div id="groupsTab" class="tab-content">
+        <div class="content">
+          <div class="chat-header">
+            <h3>🌐 Öffentliche Test-Gruppe</h3>
+          </div>
+          <div id="messages"></div>
+          <div class="input-group">
+            <input id="messageInput" type="text" placeholder="Nachricht schreiben..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button class="btn btn-primary" onclick="sendMessage()">Senden</button>
+          </div>
         </div>
-        <button class="btn btn-danger" onclick="logout()" style="margin-top: 20px;">Logout</button>
+      </div>
+
+      <!-- Direct Messages Tab Content -->
+      <div id="directTab" class="tab-content hidden">
+        <div class="content">
+          <div class="dm-placeholder">
+            <div class="placeholder-icon">💬</div>
+            <h3>Direktnachrichten</h3>
+            <p>Wähle einen Benutzer aus, um einen Chat zu starten.</p>
+            <button class="btn btn-primary" onclick="showUserSearch()">Benutzer suchen</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer with Logout -->
+      <div class="chat-footer">
+        <button class="btn btn-danger btn-small" onclick="logout()">Logout</button>
       </div>
     </div>
   </div>
