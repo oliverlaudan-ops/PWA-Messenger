@@ -1,0 +1,16 @@
+{
+  "name": "PWA Messenger",
+  "short_name": "Messenger",
+  "description": "Eigener Gruppen‑Chat mit Bots",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2196F3",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192?text=M",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
