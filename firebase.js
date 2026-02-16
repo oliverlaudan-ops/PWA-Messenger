@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDoc, where, getDocs, limit, collectionGroup } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDoc, where, getDocs, limit, collectionGroup, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBlZRSrjkYYP8KtycZOah8fX-RMMnYYPj4",
@@ -95,60 +95,42 @@ async function loadDMChatList() {
   console.log('Current user:', auth.currentUser?.uid);
   
   try {
-    // Get all direct message collections that include current user
-    const directMessagesRef = collection(db, 'directMessages');
-    const snapshot = await getDocs(directMessagesRef);
+    // Query all chats where current user is a participant
+    const chatsRef = collection(db, 'chats');
+    const q = query(
+      chatsRef,
+      where('participants', 'array-contains', auth.currentUser.uid),
+      orderBy('lastMessageTime', 'desc')
+    );
+    const snapshot = await getDocs(q);
     
-    console.log('Total directMessages collections found:', snapshot.size);
+    console.log('Total chats found:', snapshot.size);
     
     const chats = [];
     
-    // Iterate through all chat IDs
-    for (const chatDoc of snapshot.docs) {
-      const chatId = chatDoc.id;
-      console.log('Checking chat:', chatId);
-      const [uid1, uid2] = chatId.split('_');
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      console.log('Chat data:', data);
       
-      // Check if current user is part of this chat
-      if (uid1 === auth.currentUser.uid || uid2 === auth.currentUser.uid) {
-        console.log('  -> User is part of this chat');
-        const otherUserId = uid1 === auth.currentUser.uid ? uid2 : uid1;
+      // Find the other user
+      const otherUserId = data.participants.find(uid => uid !== auth.currentUser.uid);
+      
+      if (otherUserId) {
+        const otherUser = await loadUserData(otherUserId);
         
-        // Get last message from this chat
-        const messagesRef = collection(db, 'directMessages', chatId, 'messages');
-        const lastMessageQuery = query(messagesRef, orderBy('createdAt', 'desc'), limit(1));
-        const lastMessageSnapshot = await getDocs(lastMessageQuery);
-        
-        console.log('  -> Messages in chat:', lastMessageSnapshot.size);
-        
-        if (!lastMessageSnapshot.empty) {
-          const lastMessage = lastMessageSnapshot.docs[0].data();
-          const otherUser = await loadUserData(otherUserId);
-          
-          console.log('  -> Other user:', otherUser?.username);
-          console.log('  -> Last message:', lastMessage.text);
-          
-          if (otherUser) {
-            chats.push({
-              otherUserId,
-              otherUsername: otherUser.username,
-              lastMessage: lastMessage.text,
-              lastMessageTime: lastMessage.createdAt,
-              chatId
-            });
-          }
+        if (otherUser) {
+          chats.push({
+            chatId: docSnap.id,
+            otherUserId,
+            otherUsername: otherUser.username,
+            lastMessage: data.lastMessage || '',
+            lastMessageTime: data.lastMessageTime
+          });
         }
       }
     }
     
-    console.log('Total chats found:', chats.length);
-    
-    // Sort by most recent
-    chats.sort((a, b) => {
-      if (!a.lastMessageTime) return 1;
-      if (!b.lastMessageTime) return -1;
-      return b.lastMessageTime.toMillis() - a.lastMessageTime.toMillis();
-    });
+    console.log('Chats to display:', chats.length);
     
     // Render chat list
     if (chats.length === 0) {
@@ -182,7 +164,7 @@ async function loadDMChatList() {
         const time = document.createElement('div');
         time.className = 'user-email';
         time.style.fontSize = '11px';
-        time.textContent = formatTimestamp(chat.lastMessageTime);
+        time.textContent = chat.lastMessageTime ? formatTimestamp(chat.lastMessageTime) : '';
         
         topRow.appendChild(username);
         topRow.appendChild(time);
@@ -203,6 +185,21 @@ async function loadDMChatList() {
   } catch (e) {
     console.error('Error loading chat list:', e);
     chatListEl.innerHTML = '<div class="no-users">Fehler beim Laden der Chats</div>';
+  }
+}
+
+// Create or update chat metadata
+async function updateChatMetadata(chatId, lastMessage, participants) {
+  const chatRef = doc(db, 'chats', chatId);
+  
+  try {
+    await setDoc(chatRef, {
+      participants,
+      lastMessage,
+      lastMessageTime: serverTimestamp()
+    }, { merge: true });
+  } catch (e) {
+    console.error('Error updating chat metadata:', e);
   }
 }
 
@@ -313,7 +310,7 @@ function createChatId(uid1, uid2) {
 }
 
 // Start direct message with user
-function startDirectMessage(user) {
+async function startDirectMessage(user) {
   closeUserSearch();
   currentDMUser = user;
   
@@ -321,6 +318,10 @@ function startDirectMessage(user) {
   document.getElementById('dmListView').classList.add('hidden');
   document.getElementById('dmChatView').classList.remove('hidden');
   document.getElementById('dmChatUsername').textContent = `👤 @${user.username}`;
+  
+  // Create chat metadata if it doesn't exist
+  const chatId = createChatId(auth.currentUser.uid, user.uid);
+  await updateChatMetadata(chatId, '', [auth.currentUser.uid, user.uid]);
   
   // Load DM messages
   loadDMMessages(user.uid);
@@ -442,12 +443,18 @@ window.sendDMMessage = async () => {
   
   try {
     const chatId = createChatId(auth.currentUser.uid, currentDMUser.uid);
+    
+    // Add message
     await addDoc(collection(db, 'directMessages', chatId, 'messages'), {
       text,
       uid: auth.currentUser.uid,
       username: currentUserData.username,
       createdAt: serverTimestamp()
     });
+    
+    // Update chat metadata
+    await updateChatMetadata(chatId, text, [auth.currentUser.uid, currentDMUser.uid]);
+    
     document.getElementById('dmMessageInput').value = '';
   } catch (e) {
     console.error('Error sending DM:', e);
