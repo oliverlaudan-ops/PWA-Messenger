@@ -91,20 +91,27 @@ async function loadDMChatList() {
   const chatListEl = document.getElementById('dmChatList');
   chatListEl.innerHTML = '<div class="spinner"></div>';
   
+  console.log('=== Loading DM Chat List ===');
+  console.log('Current user:', auth.currentUser?.uid);
+  
   try {
     // Get all direct message collections that include current user
     const directMessagesRef = collection(db, 'directMessages');
     const snapshot = await getDocs(directMessagesRef);
+    
+    console.log('Total directMessages collections found:', snapshot.size);
     
     const chats = [];
     
     // Iterate through all chat IDs
     for (const chatDoc of snapshot.docs) {
       const chatId = chatDoc.id;
+      console.log('Checking chat:', chatId);
       const [uid1, uid2] = chatId.split('_');
       
       // Check if current user is part of this chat
       if (uid1 === auth.currentUser.uid || uid2 === auth.currentUser.uid) {
+        console.log('  -> User is part of this chat');
         const otherUserId = uid1 === auth.currentUser.uid ? uid2 : uid1;
         
         // Get last message from this chat
@@ -112,9 +119,14 @@ async function loadDMChatList() {
         const lastMessageQuery = query(messagesRef, orderBy('createdAt', 'desc'), limit(1));
         const lastMessageSnapshot = await getDocs(lastMessageQuery);
         
+        console.log('  -> Messages in chat:', lastMessageSnapshot.size);
+        
         if (!lastMessageSnapshot.empty) {
           const lastMessage = lastMessageSnapshot.docs[0].data();
           const otherUser = await loadUserData(otherUserId);
+          
+          console.log('  -> Other user:', otherUser?.username);
+          console.log('  -> Last message:', lastMessage.text);
           
           if (otherUser) {
             chats.push({
@@ -129,6 +141,8 @@ async function loadDMChatList() {
       }
     }
     
+    console.log('Total chats found:', chats.length);
+    
     // Sort by most recent
     chats.sort((a, b) => {
       if (!a.lastMessageTime) return 1;
@@ -138,6 +152,7 @@ async function loadDMChatList() {
     
     // Render chat list
     if (chats.length === 0) {
+      console.log('No chats to display - showing placeholder');
       chatListEl.innerHTML = '<div class="dm-placeholder"><div class="placeholder-icon">💬</div><h3>Keine Chats</h3><p>Starte einen neuen Chat über den Button oben!</p></div>';
     } else {
       chatListEl.innerHTML = '';
