@@ -24,6 +24,39 @@ let currentTab = 'groups';
 let allUsers = [];
 let currentDMUser = null; // Current DM chat partner
 
+// Format timestamp for display
+function formatTimestamp(timestamp) {
+  if (!timestamp) return '';
+  
+  const date = timestamp.toDate();
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  const timeStr = date.toLocaleTimeString('de-DE', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+  
+  if (msgDate.getTime() === today.getTime()) {
+    // Today: just time
+    return timeStr;
+  } else if (msgDate.getTime() === yesterday.getTime()) {
+    // Yesterday
+    return `Gestern ${timeStr}`;
+  } else {
+    // Older: full date
+    const dateStr = date.toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    return `${dateStr} ${timeStr}`;
+  }
+}
+
 // Screen Management
 function showScreen(screenId) {
   ['loginScreen', 'registerScreen', 'usernameScreen', 'chatScreen'].forEach(id => {
@@ -231,6 +264,14 @@ async function appendDMMessage(docSnap) {
   
   div.appendChild(usernameSpan);
   div.appendChild(textSpan);
+  
+  // Add timestamp
+  if (data.createdAt) {
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'time';
+    timeSpan.textContent = formatTimestamp(data.createdAt);
+    div.appendChild(timeSpan);
+  }
   
   const msgs = document.getElementById('dmMessages');
   msgs.appendChild(div);
@@ -453,6 +494,14 @@ async function appendMessage(docSnap) {
   
   div.appendChild(usernameSpan);
   div.appendChild(textSpan);
+  
+  // Add timestamp
+  if (data.createdAt) {
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'time';
+    timeSpan.textContent = formatTimestamp(data.createdAt);
+    div.appendChild(timeSpan);
+  }
   
   const msgs = document.getElementById('messages');
   msgs.appendChild(div);
