@@ -475,9 +475,10 @@ function loadDMMessages(otherUserId) {
   console.log('  chatId:', chatId);
   console.log('  Collection path: directMessages/' + chatId + '/messages');
   
+  // Query in descending order to get the latest 50 messages
   const q = query(
     collection(db, 'directMessages', chatId, 'messages'),
-    orderBy('createdAt'),
+    orderBy('createdAt', 'desc'),
     limit(50)
   );
   
@@ -495,7 +496,11 @@ function loadDMMessages(otherUserId) {
     if (msgs.children.length === 0) {
       console.log('  Initial load - rendering all messages');
       msgs.innerHTML = '';
-      for (const docSnap of snapshot.docs) {
+      
+      // Reverse the array since we queried in DESC order but want to display in ASC order
+      const docsArray = snapshot.docs.slice().reverse();
+      
+      for (const docSnap of docsArray) {
         console.log('  Rendering message:', docSnap.id);
         await appendDMMessage(docSnap);
       }
@@ -506,7 +511,7 @@ function loadDMMessages(otherUserId) {
         if (change.type === 'added') {
           if (!document.querySelector(`[data-dm-msg-id="${change.doc.id}"]`)) {
             console.log('  Adding new message:', change.doc.id);
-            await appendDMMessage(change.doc);
+            await prependDMMessage(change.doc);
             
             // Reset unread count when new message arrives while chat is open
             if (!hasResetUnreadForCurrentChat) {
@@ -534,6 +539,49 @@ function loadDMMessages(otherUserId) {
   });
   
   console.log('  onSnapshot listener registered');
+}
+
+// Prepend single DM message (for new messages when query is DESC)
+async function prependDMMessage(docSnap) {
+  console.log('=== prependDMMessage called ===');
+  console.log('  doc.id:', docSnap.id);
+  
+  const data = docSnap.data();
+  console.log('  Message data:', data);
+  
+  const div = document.createElement('div');
+  div.className = 'message';
+  div.setAttribute('data-dm-msg-id', docSnap.id);
+  
+  let username = data.username || 'Unbekannt';
+  if (!data.username && data.uid) {
+    const userData = await loadUserData(data.uid);
+    username = userData?.username || data.uid.slice(0, 8);
+  }
+  console.log('  Username:', username);
+  
+  const usernameSpan = document.createElement('span');
+  usernameSpan.className = 'username';
+  usernameSpan.textContent = `@${username}`;
+  
+  const textSpan = document.createElement('span');
+  textSpan.className = 'text';
+  textSpan.textContent = data.text;
+  
+  div.appendChild(usernameSpan);
+  div.appendChild(textSpan);
+  
+  // Add timestamp
+  if (data.createdAt) {
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'time';
+    timeSpan.textContent = formatTimestamp(data.createdAt);
+    div.appendChild(timeSpan);
+  }
+  
+  const msgs = document.getElementById('dmMessages');
+  msgs.appendChild(div); // Append because messages are already in correct order
+  console.log('  Message appended to DOM');
 }
 
 // Update existing DM message (for timestamp updates)
