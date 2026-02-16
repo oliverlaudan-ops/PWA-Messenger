@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDoc, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDoc, where, getDocs, limit, collectionGroup } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBlZRSrjkYYP8KtycZOah8fX-RMMnYYPj4",
@@ -79,7 +79,122 @@ window.switchTab = (tabName) => {
   // Update tab content
   document.getElementById('groupsTab').classList.toggle('hidden', tabName !== 'groups');
   document.getElementById('directTab').classList.toggle('hidden', tabName !== 'direct');
+  
+  // Load DM chat list when switching to direct tab
+  if (tabName === 'direct') {
+    loadDMChatList();
+  }
 };
+
+// Load DM Chat List
+async function loadDMChatList() {
+  const chatListEl = document.getElementById('dmChatList');
+  chatListEl.innerHTML = '<div class="spinner"></div>';
+  
+  try {
+    // Get all direct message collections that include current user
+    const directMessagesRef = collection(db, 'directMessages');
+    const snapshot = await getDocs(directMessagesRef);
+    
+    const chats = [];
+    
+    // Iterate through all chat IDs
+    for (const chatDoc of snapshot.docs) {
+      const chatId = chatDoc.id;
+      const [uid1, uid2] = chatId.split('_');
+      
+      // Check if current user is part of this chat
+      if (uid1 === auth.currentUser.uid || uid2 === auth.currentUser.uid) {
+        const otherUserId = uid1 === auth.currentUser.uid ? uid2 : uid1;
+        
+        // Get last message from this chat
+        const messagesRef = collection(db, 'directMessages', chatId, 'messages');
+        const lastMessageQuery = query(messagesRef, orderBy('createdAt', 'desc'), limit(1));
+        const lastMessageSnapshot = await getDocs(lastMessageQuery);
+        
+        if (!lastMessageSnapshot.empty) {
+          const lastMessage = lastMessageSnapshot.docs[0].data();
+          const otherUser = await loadUserData(otherUserId);
+          
+          if (otherUser) {
+            chats.push({
+              otherUserId,
+              otherUsername: otherUser.username,
+              lastMessage: lastMessage.text,
+              lastMessageTime: lastMessage.createdAt,
+              chatId
+            });
+          }
+        }
+      }
+    }
+    
+    // Sort by most recent
+    chats.sort((a, b) => {
+      if (!a.lastMessageTime) return 1;
+      if (!b.lastMessageTime) return -1;
+      return b.lastMessageTime.toMillis() - a.lastMessageTime.toMillis();
+    });
+    
+    // Render chat list
+    if (chats.length === 0) {
+      chatListEl.innerHTML = '<div class="dm-placeholder"><div class="placeholder-icon">💬</div><h3>Keine Chats</h3><p>Starte einen neuen Chat über den Button oben!</p></div>';
+    } else {
+      chatListEl.innerHTML = '';
+      chats.forEach(chat => {
+        const chatItem = document.createElement('div');
+        chatItem.className = 'user-item';
+        chatItem.onclick = () => startDirectMessageById(chat.otherUserId, chat.otherUsername);
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'user-avatar';
+        avatar.textContent = chat.otherUsername.charAt(0).toUpperCase();
+        
+        const details = document.createElement('div');
+        details.className = 'user-details';
+        details.style.flex = '1';
+        
+        const topRow = document.createElement('div');
+        topRow.style.display = 'flex';
+        topRow.style.justifyContent = 'space-between';
+        topRow.style.alignItems = 'center';
+        topRow.style.marginBottom = '4px';
+        
+        const username = document.createElement('div');
+        username.className = 'user-username';
+        username.textContent = `@${chat.otherUsername}`;
+        
+        const time = document.createElement('div');
+        time.className = 'user-email';
+        time.style.fontSize = '11px';
+        time.textContent = formatTimestamp(chat.lastMessageTime);
+        
+        topRow.appendChild(username);
+        topRow.appendChild(time);
+        
+        const preview = document.createElement('div');
+        preview.className = 'user-email';
+        preview.textContent = chat.lastMessage.length > 50 
+          ? chat.lastMessage.substring(0, 50) + '...' 
+          : chat.lastMessage;
+        
+        details.appendChild(topRow);
+        details.appendChild(preview);
+        chatItem.appendChild(avatar);
+        chatItem.appendChild(details);
+        chatListEl.appendChild(chatItem);
+      });
+    }
+  } catch (e) {
+    console.error('Error loading chat list:', e);
+    chatListEl.innerHTML = '<div class="no-users">Fehler beim Laden der Chats</div>';
+  }
+}
+
+// Start direct message by user ID and username
+function startDirectMessageById(userId, username) {
+  startDirectMessage({ uid: userId, username: username });
+}
 
 // User Search Modal
 window.showUserSearch = async () => {
@@ -208,6 +323,9 @@ window.closeDMChat = () => {
   document.getElementById('dmListView').classList.remove('hidden');
   document.getElementById('dmMessages').innerHTML = '';
   document.getElementById('dmMessageInput').value = '';
+  
+  // Reload chat list to show updated last message
+  loadDMChatList();
 };
 
 // Load DM messages
