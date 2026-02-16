@@ -412,6 +412,9 @@ function createChatId(uid1, uid2) {
 
 // Start direct message with user
 async function startDirectMessage(user) {
+  console.log('=== startDirectMessage called ===');
+  console.log('  user:', user);
+  
   closeUserSearch();
   currentDMUser = user;
   hasResetUnreadForCurrentChat = false;
@@ -423,12 +426,16 @@ async function startDirectMessage(user) {
   
   // Create chat metadata if it doesn't exist (without senderId to not increment counter)
   const chatId = createChatId(auth.currentUser.uid, user.uid);
+  console.log('  chatId:', chatId);
   
   // Check if chat exists, if not create it
   const chatRef = doc(db, 'chats', chatId);
   const chatSnap = await getDoc(chatRef);
   if (!chatSnap.exists()) {
+    console.log('  Chat does not exist, creating...');
     await updateChatMetadata(chatId, '', [auth.currentUser.uid, user.uid], null);
+  } else {
+    console.log('  Chat already exists');
   }
   
   // Reset unread count for current user when opening chat
@@ -436,6 +443,7 @@ async function startDirectMessage(user) {
   hasResetUnreadForCurrentChat = true;
   
   // Load DM messages
+  console.log('  Calling loadDMMessages...');
   loadDMMessages(user.uid);
 }
 
@@ -459,25 +467,45 @@ window.closeDMChat = () => {
 
 // Load DM messages
 function loadDMMessages(otherUserId) {
+  console.log('=== loadDMMessages called ===');
+  console.log('  otherUserId:', otherUserId);
+  console.log('  currentUser:', auth.currentUser?.uid);
+  
   const chatId = createChatId(auth.currentUser.uid, otherUserId);
+  console.log('  chatId:', chatId);
+  console.log('  Collection path: directMessages/' + chatId + '/messages');
+  
   const q = query(
     collection(db, 'directMessages', chatId, 'messages'),
     orderBy('createdAt'),
     limit(50)
   );
   
+  console.log('  Setting up onSnapshot listener...');
+  
   dmUnsubscribe = onSnapshot(q, async (snapshot) => {
+    console.log('=== onSnapshot triggered ===');
+    console.log('  snapshot.size:', snapshot.size);
+    console.log('  snapshot.empty:', snapshot.empty);
+    
     const msgs = document.getElementById('dmMessages');
+    console.log('  dmMessages element found:', !!msgs);
+    console.log('  Current message count:', msgs.children.length);
     
     if (msgs.children.length === 0) {
+      console.log('  Initial load - rendering all messages');
       msgs.innerHTML = '';
       for (const docSnap of snapshot.docs) {
+        console.log('  Rendering message:', docSnap.id);
         await appendDMMessage(docSnap);
       }
     } else {
+      console.log('  Incremental update');
       snapshot.docChanges().forEach(async (change) => {
+        console.log('  Change type:', change.type, 'doc:', change.doc.id);
         if (change.type === 'added') {
           if (!document.querySelector(`[data-dm-msg-id="${change.doc.id}"]`)) {
+            console.log('  Adding new message:', change.doc.id);
             await appendDMMessage(change.doc);
             
             // Reset unread count when new message arrives while chat is open
@@ -485,8 +513,11 @@ function loadDMMessages(otherUserId) {
               await resetUnreadCount(chatId, auth.currentUser.uid);
               hasResetUnreadForCurrentChat = true;
             }
+          } else {
+            console.log('  Message already exists, skipping:', change.doc.id);
           }
         } else if (change.type === 'modified') {
+          console.log('  Updating message:', change.doc.id);
           // Update message when timestamp is added by server
           await updateDMMessage(change.doc);
         }
@@ -494,34 +525,56 @@ function loadDMMessages(otherUserId) {
     }
     
     msgs.scrollTop = msgs.scrollHeight;
+    console.log('  Scrolled to bottom');
+  }, (error) => {
+    console.error('=== onSnapshot ERROR ===');
+    console.error('  Error:', error);
+    console.error('  Error code:', error.code);
+    console.error('  Error message:', error.message);
   });
+  
+  console.log('  onSnapshot listener registered');
 }
 
 // Update existing DM message (for timestamp updates)
 async function updateDMMessage(docSnap) {
+  console.log('=== updateDMMessage called ===');
+  console.log('  doc.id:', docSnap.id);
+  
   const existingMsg = document.querySelector(`[data-dm-msg-id="${docSnap.id}"]`);
-  if (!existingMsg) return;
+  if (!existingMsg) {
+    console.log('  Message element not found');
+    return;
+  }
   
   const data = docSnap.data();
+  console.log('  Message data:', data);
   
   // Check if timestamp element already exists
   let timeSpan = existingMsg.querySelector('.time');
   
   if (data.createdAt && !timeSpan) {
     // Add timestamp if it doesn't exist
+    console.log('  Adding timestamp');
     timeSpan = document.createElement('span');
     timeSpan.className = 'time';
     timeSpan.textContent = formatTimestamp(data.createdAt);
     existingMsg.appendChild(timeSpan);
   } else if (data.createdAt && timeSpan) {
     // Update timestamp if it exists
+    console.log('  Updating timestamp');
     timeSpan.textContent = formatTimestamp(data.createdAt);
   }
 }
 
 // Append single DM message
 async function appendDMMessage(docSnap) {
+  console.log('=== appendDMMessage called ===');
+  console.log('  doc.id:', docSnap.id);
+  
   const data = docSnap.data();
+  console.log('  Message data:', data);
+  
   const div = document.createElement('div');
   div.className = 'message';
   div.setAttribute('data-dm-msg-id', docSnap.id);
@@ -531,6 +584,7 @@ async function appendDMMessage(docSnap) {
     const userData = await loadUserData(data.uid);
     username = userData?.username || data.uid.slice(0, 8);
   }
+  console.log('  Username:', username);
   
   const usernameSpan = document.createElement('span');
   usernameSpan.className = 'username';
@@ -553,6 +607,7 @@ async function appendDMMessage(docSnap) {
   
   const msgs = document.getElementById('dmMessages');
   msgs.appendChild(div);
+  console.log('  Message appended to DOM');
 }
 
 // Send DM Message
