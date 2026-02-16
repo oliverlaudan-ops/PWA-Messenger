@@ -226,14 +226,24 @@ async function updateChatMetadata(chatId, lastMessage, participants, senderId) {
     // Initialize unreadCount if it doesn't exist
     const unreadCount = currentData.unreadCount || {};
     
-    // Increment unread count for all participants except sender
-    participants.forEach(uid => {
-      if (uid !== senderId) {
-        unreadCount[uid] = (unreadCount[uid] || 0) + 1;
-      }
-    });
+    // Only increment unread count if this is an actual message (senderId provided)
+    if (senderId) {
+      // Increment unread count for all participants except sender
+      participants.forEach(uid => {
+        if (uid !== senderId) {
+          unreadCount[uid] = (unreadCount[uid] || 0) + 1;
+        }
+      });
+    } else {
+      // Just initialize unread counts to 0 if they don't exist (for new chats)
+      participants.forEach(uid => {
+        if (!(uid in unreadCount)) {
+          unreadCount[uid] = 0;
+        }
+      });
+    }
     
-    console.log('Updating chat metadata, new unreadCount:', unreadCount);
+    console.log('Updating chat metadata, senderId:', senderId, 'new unreadCount:', unreadCount);
     
     await setDoc(chatRef, {
       participants,
@@ -384,9 +394,15 @@ async function startDirectMessage(user) {
   document.getElementById('dmChatView').classList.remove('hidden');
   document.getElementById('dmChatUsername').textContent = `👤 @${user.username}`;
   
-  // Create chat metadata if it doesn't exist
+  // Create chat metadata if it doesn't exist (without senderId to not increment counter)
   const chatId = createChatId(auth.currentUser.uid, user.uid);
-  await updateChatMetadata(chatId, '', [auth.currentUser.uid, user.uid], auth.currentUser.uid);
+  
+  // Check if chat exists, if not create it
+  const chatRef = doc(db, 'chats', chatId);
+  const chatSnap = await getDoc(chatRef);
+  if (!chatSnap.exists()) {
+    await updateChatMetadata(chatId, '', [auth.currentUser.uid, user.uid], null);
+  }
   
   // Reset unread count for current user
   await resetUnreadCount(chatId, auth.currentUser.uid);
