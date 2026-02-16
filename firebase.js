@@ -219,35 +219,51 @@ async function loadDMChatList() {
 async function updateChatMetadata(chatId, lastMessage, participants, senderId) {
   const chatRef = doc(db, 'chats', chatId);
   
+  console.log('=== updateChatMetadata called ===');
+  console.log('  chatId:', chatId);
+  console.log('  lastMessage:', lastMessage);
+  console.log('  participants:', participants);
+  console.log('  senderId:', senderId);
+  
   try {
     // Get current chat data to preserve unread counts
     const chatSnap = await getDoc(chatRef);
     const currentData = chatSnap.exists() ? chatSnap.data() : {};
+    
+    console.log('  Current chat data:', currentData);
+    console.log('  Current unreadCount:', currentData.unreadCount);
     
     // Initialize unreadCount if it doesn't exist
     const unreadCount = currentData.unreadCount || {};
     
     // Only update unread count if this is an actual message (senderId provided)
     if (senderId) {
+      console.log('  senderId provided - updating counters');
+      
       // Reset sender's count to 0 (they are actively in the chat)
       unreadCount[senderId] = 0;
+      console.log('  Set sender count to 0:', senderId);
       
       // Increment unread count for all OTHER participants
       participants.forEach(uid => {
         if (uid !== senderId) {
-          unreadCount[uid] = (unreadCount[uid] || 0) + 1;
+          const oldCount = unreadCount[uid] || 0;
+          unreadCount[uid] = oldCount + 1;
+          console.log('  Incremented count for', uid, 'from', oldCount, 'to', unreadCount[uid]);
         }
       });
     } else {
+      console.log('  No senderId - just initializing');
       // Just initialize unread counts to 0 if they don't exist (for new chats)
       participants.forEach(uid => {
         if (!(uid in unreadCount)) {
           unreadCount[uid] = 0;
+          console.log('  Initialized count for', uid, 'to 0');
         }
       });
     }
     
-    console.log('Updating chat metadata, senderId:', senderId, 'new unreadCount:', unreadCount);
+    console.log('  Final unreadCount before save:', unreadCount);
     
     await setDoc(chatRef, {
       participants,
@@ -255,6 +271,8 @@ async function updateChatMetadata(chatId, lastMessage, participants, senderId) {
       lastMessageTime: serverTimestamp(),
       unreadCount
     }, { merge: true });
+    
+    console.log('  Chat metadata saved successfully');
   } catch (e) {
     console.error('Error updating chat metadata:', e);
   }
@@ -542,8 +560,14 @@ window.sendDMMessage = async () => {
   const text = document.getElementById('dmMessageInput').value.trim();
   if (!text || !auth.currentUser || !currentUserData || !currentDMUser) return;
   
+  console.log('=== sendDMMessage called ===');
+  console.log('  text:', text);
+  console.log('  currentUser:', auth.currentUser.uid);
+  console.log('  currentDMUser:', currentDMUser.uid);
+  
   try {
     const chatId = createChatId(auth.currentUser.uid, currentDMUser.uid);
+    console.log('  chatId:', chatId);
     
     // Add message
     await addDoc(collection(db, 'directMessages', chatId, 'messages'), {
@@ -552,9 +576,12 @@ window.sendDMMessage = async () => {
       username: currentUserData.username,
       createdAt: serverTimestamp()
     });
+    console.log('  Message added to Firestore');
     
     // Update chat metadata with sender ID (this will reset sender's count to 0 and increment receiver's)
+    console.log('  Calling updateChatMetadata with senderId:', auth.currentUser.uid);
     await updateChatMetadata(chatId, text, [auth.currentUser.uid, currentDMUser.uid], auth.currentUser.uid);
+    console.log('  updateChatMetadata completed');
     
     document.getElementById('dmMessageInput').value = '';
   } catch (e) {
