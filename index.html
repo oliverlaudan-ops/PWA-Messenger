@@ -87,14 +87,30 @@
 
       <!-- Groups Tab Content -->
       <div id="groupsTab" class="tab-content">
-        <div class="content">
-          <div class="chat-header">
-            <h3>🌐 Öffentliche Test-Gruppe</h3>
+        <!-- Group List View -->
+        <div id="groupListView" class="content">
+          <div class="dm-list-header">
+            <h3>👥 Deine Gruppen</h3>
+            <button class="btn btn-primary btn-small" onclick="showCreateGroup()">+ Neue Gruppe</button>
           </div>
-          <div id="messages"></div>
+          <div id="groupList" class="dm-chat-list">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+        <!-- Group Chat View -->
+        <div id="groupChatView" class="content hidden">
+          <div class="chat-header dm-chat-header">
+            <button class="back-btn" onclick="closeGroupChat()">←</button>
+            <div class="dm-chat-info">
+              <h3 id="groupChatName"></h3>
+              <small id="groupChatMembers" style="color: #888; font-size: 12px;"></small>
+            </div>
+          </div>
+          <div id="groupMessages"></div>
           <div class="input-group">
-            <input id="messageInput" type="text" placeholder="Nachricht schreiben..." onkeypress="if(event.key==='Enter') sendMessage()">
-            <button class="btn btn-primary" onclick="sendMessage()">Senden</button>
+            <input id="groupMessageInput" type="text" placeholder="Nachricht schreiben..." onkeypress="if(event.key==='Enter') sendGroupMessage()">
+            <button class="btn btn-primary" onclick="sendGroupMessage()">Senden</button>
           </div>
         </div>
       </div>
@@ -149,6 +165,28 @@
         <div id="userList" class="user-list">
           <div class="spinner"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Group Modal -->
+  <div id="createGroupModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>👥 Neue Gruppe erstellen</h2>
+        <button class="close-btn" onclick="closeCreateGroup()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="groupNameInput">Gruppenname</label>
+          <input id="groupNameInput" type="text" placeholder="z.B. Meine coole Gruppe" maxlength="50">
+        </div>
+        <div class="form-group">
+          <label for="groupDescInput">Beschreibung (optional)</label>
+          <textarea id="groupDescInput" placeholder="Worum geht es in dieser Gruppe?" maxlength="200" rows="3"></textarea>
+        </div>
+        <div id="createGroupError" class="error hidden"></div>
+        <button class="btn btn-primary" onclick="createGroup()">Gruppe erstellen</button>
       </div>
     </div>
   </div>
