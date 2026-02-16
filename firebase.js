@@ -111,6 +111,7 @@ async function loadDMChatList() {
     for (const docSnap of snapshot.docs) {
       const data = docSnap.data();
       console.log('Chat data:', data);
+      console.log('  -> unreadCount object:', data.unreadCount);
       
       // Find the other user
       const otherUserId = data.participants.find(uid => uid !== auth.currentUser.uid);
@@ -121,6 +122,7 @@ async function loadDMChatList() {
         if (otherUser) {
           // Get unread count for current user
           const unreadCount = (data.unreadCount && data.unreadCount[auth.currentUser.uid]) || 0;
+          console.log('  -> Unread count for current user:', unreadCount);
           
           chats.push({
             chatId: docSnap.id,
@@ -143,6 +145,8 @@ async function loadDMChatList() {
     } else {
       chatListEl.innerHTML = '';
       chats.forEach(chat => {
+        console.log('Rendering chat:', chat.otherUsername, 'unread:', chat.unreadCount);
+        
         const chatItem = document.createElement('div');
         chatItem.className = 'user-item';
         chatItem.onclick = () => startDirectMessageById(chat.otherUserId, chat.otherUsername);
@@ -179,10 +183,13 @@ async function loadDMChatList() {
         
         // Add unread badge if count > 0
         if (chat.unreadCount > 0) {
+          console.log('  -> Creating badge with count:', chat.unreadCount);
           const badge = document.createElement('div');
           badge.className = 'unread-badge';
           badge.textContent = chat.unreadCount > 99 ? '99+' : chat.unreadCount;
           rightSide.appendChild(badge);
+        } else {
+          console.log('  -> No badge (count is 0)');
         }
         
         topRow.appendChild(username);
@@ -226,6 +233,8 @@ async function updateChatMetadata(chatId, lastMessage, participants, senderId) {
       }
     });
     
+    console.log('Updating chat metadata, new unreadCount:', unreadCount);
+    
     await setDoc(chatRef, {
       participants,
       lastMessage,
@@ -247,6 +256,8 @@ async function resetUnreadCount(chatId, userId) {
       const data = chatSnap.data();
       const unreadCount = data.unreadCount || {};
       unreadCount[userId] = 0;
+      
+      console.log('Resetting unread count for user:', userId, 'new unreadCount:', unreadCount);
       
       await updateDoc(chatRef, {
         unreadCount
