@@ -23,6 +23,7 @@ const userCache = {};
 let currentTab = 'groups';
 let allUsers = [];
 let currentDMUser = null; // Current DM chat partner
+let hasResetUnreadForCurrentChat = false; // Track if we've reset unread for current chat
 
 // Format timestamp for display
 function formatTimestamp(timestamp) {
@@ -226,9 +227,12 @@ async function updateChatMetadata(chatId, lastMessage, participants, senderId) {
     // Initialize unreadCount if it doesn't exist
     const unreadCount = currentData.unreadCount || {};
     
-    // Only increment unread count if this is an actual message (senderId provided)
+    // Only update unread count if this is an actual message (senderId provided)
     if (senderId) {
-      // Increment unread count for all participants except sender
+      // Reset sender's count to 0 (they are actively in the chat)
+      unreadCount[senderId] = 0;
+      
+      // Increment unread count for all OTHER participants
       participants.forEach(uid => {
         if (uid !== senderId) {
           unreadCount[uid] = (unreadCount[uid] || 0) + 1;
@@ -265,13 +269,17 @@ async function resetUnreadCount(chatId, userId) {
     if (chatSnap.exists()) {
       const data = chatSnap.data();
       const unreadCount = data.unreadCount || {};
-      unreadCount[userId] = 0;
       
-      console.log('Resetting unread count for user:', userId, 'new unreadCount:', unreadCount);
-      
-      await updateDoc(chatRef, {
-        unreadCount
-      });
+      // Only reset if there are unread messages
+      if (unreadCount[userId] > 0) {
+        unreadCount[userId] = 0;
+        
+        console.log('Resetting unread count for user:', userId, 'new unreadCount:', unreadCount);
+        
+        await updateDoc(chatRef, {
+          unreadCount
+        });
+      }
     }
   } catch (e) {
     console.error('Error resetting unread count:', e);
@@ -388,6 +396,7 @@ function createChatId(uid1, uid2) {
 async function startDirectMessage(user) {
   closeUserSearch();
   currentDMUser = user;
+  hasResetUnreadForCurrentChat = false;
   
   // Show DM chat view
   document.getElementById('dmListView').classList.add('hidden');
@@ -404,8 +413,9 @@ async function startDirectMessage(user) {
     await updateChatMetadata(chatId, '', [auth.currentUser.uid, user.uid], null);
   }
   
-  // Reset unread count for current user
+  // Reset unread count for current user when opening chat
   await resetUnreadCount(chatId, auth.currentUser.uid);
+  hasResetUnreadForCurrentChat = true;
   
   // Load DM messages
   loadDMMessages(user.uid);
@@ -419,6 +429,7 @@ window.closeDMChat = () => {
   }
   
   currentDMUser = null;
+  hasResetUnreadForCurrentChat = false;
   document.getElementById('dmChatView').classList.add('hidden');
   document.getElementById('dmListView').classList.remove('hidden');
   document.getElementById('dmMessages').innerHTML = '';
@@ -450,6 +461,12 @@ function loadDMMessages(otherUserId) {
         if (change.type === 'added') {
           if (!document.querySelector(`[data-dm-msg-id="${change.doc.id}"]`)) {
             await appendDMMessage(change.doc);
+            
+            // Reset unread count when new message arrives while chat is open
+            if (!hasResetUnreadForCurrentChat) {
+              await resetUnreadCount(chatId, auth.currentUser.uid);
+              hasResetUnreadForCurrentChat = true;
+            }
           }
         } else if (change.type === 'modified') {
           // Update message when timestamp is added by server
@@ -536,7 +553,7 @@ window.sendDMMessage = async () => {
       createdAt: serverTimestamp()
     });
     
-    // Update chat metadata with sender ID
+    // Update chat metadata with sender ID (this will reset sender's count to 0 and increment receiver's)
     await updateChatMetadata(chatId, text, [auth.currentUser.uid, currentDMUser.uid], auth.currentUser.uid);
     
     document.getElementById('dmMessageInput').value = '';
@@ -655,6 +672,7 @@ window.logout = async () => {
   currentDMUser = null;
   currentTab = 'groups';
   allUsers = [];
+  hasResetUnreadForCurrentChat = false;
   Object.keys(userCache).forEach(key => delete userCache[key]);
 };
 
