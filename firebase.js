@@ -92,9 +92,6 @@ async function loadDMChatList() {
   const chatListEl = document.getElementById('dmChatList');
   chatListEl.innerHTML = '<div class="spinner"></div>';
   
-  console.log('=== Loading DM Chat List ===');
-  console.log('Current user:', auth.currentUser?.uid);
-  
   try {
     // Query all chats where current user is a participant
     const chatsRef = collection(db, 'chats');
@@ -105,14 +102,10 @@ async function loadDMChatList() {
     );
     const snapshot = await getDocs(q);
     
-    console.log('Total chats found:', snapshot.size);
-    
     const chats = [];
     
     for (const docSnap of snapshot.docs) {
       const data = docSnap.data();
-      console.log('Chat data:', data);
-      console.log('  -> unreadCount object:', data.unreadCount);
       
       // Find the other user
       const otherUserId = data.participants.find(uid => uid !== auth.currentUser.uid);
@@ -123,7 +116,6 @@ async function loadDMChatList() {
         if (otherUser) {
           // Get unread count for current user
           const unreadCount = (data.unreadCount && data.unreadCount[auth.currentUser.uid]) || 0;
-          console.log('  -> Unread count for current user:', unreadCount);
           
           chats.push({
             chatId: docSnap.id,
@@ -137,17 +129,12 @@ async function loadDMChatList() {
       }
     }
     
-    console.log('Chats to display:', chats.length);
-    
     // Render chat list
     if (chats.length === 0) {
-      console.log('No chats to display - showing placeholder');
       chatListEl.innerHTML = '<div class="dm-placeholder"><div class="placeholder-icon">💬</div><h3>Keine Chats</h3><p>Starte einen neuen Chat über den Button oben!</p></div>';
     } else {
       chatListEl.innerHTML = '';
       chats.forEach(chat => {
-        console.log('Rendering chat:', chat.otherUsername, 'unread:', chat.unreadCount);
-        
         const chatItem = document.createElement('div');
         chatItem.className = 'user-item';
         chatItem.onclick = () => startDirectMessageById(chat.otherUserId, chat.otherUsername);
@@ -184,13 +171,10 @@ async function loadDMChatList() {
         
         // Add unread badge if count > 0
         if (chat.unreadCount > 0) {
-          console.log('  -> Creating badge with count:', chat.unreadCount);
           const badge = document.createElement('div');
           badge.className = 'unread-badge';
           badge.textContent = chat.unreadCount > 99 ? '99+' : chat.unreadCount;
           rightSide.appendChild(badge);
-        } else {
-          console.log('  -> No badge (count is 0)');
         }
         
         topRow.appendChild(username);
@@ -219,51 +203,33 @@ async function loadDMChatList() {
 async function updateChatMetadata(chatId, lastMessage, participants, senderId) {
   const chatRef = doc(db, 'chats', chatId);
   
-  console.log('=== updateChatMetadata called ===');
-  console.log('  chatId:', chatId);
-  console.log('  lastMessage:', lastMessage);
-  console.log('  participants:', participants);
-  console.log('  senderId:', senderId);
-  
   try {
     // Get current chat data to preserve unread counts
     const chatSnap = await getDoc(chatRef);
     const currentData = chatSnap.exists() ? chatSnap.data() : {};
-    
-    console.log('  Current chat data:', currentData);
-    console.log('  Current unreadCount:', currentData.unreadCount);
     
     // Initialize unreadCount if it doesn't exist
     const unreadCount = currentData.unreadCount || {};
     
     // Only update unread count if this is an actual message (senderId provided)
     if (senderId) {
-      console.log('  senderId provided - updating counters');
-      
       // Reset sender's count to 0 (they are actively in the chat)
       unreadCount[senderId] = 0;
-      console.log('  Set sender count to 0:', senderId);
       
       // Increment unread count for all OTHER participants
       participants.forEach(uid => {
         if (uid !== senderId) {
-          const oldCount = unreadCount[uid] || 0;
-          unreadCount[uid] = oldCount + 1;
-          console.log('  Incremented count for', uid, 'from', oldCount, 'to', unreadCount[uid]);
+          unreadCount[uid] = (unreadCount[uid] || 0) + 1;
         }
       });
     } else {
-      console.log('  No senderId - just initializing');
       // Just initialize unread counts to 0 if they don't exist (for new chats)
       participants.forEach(uid => {
         if (!(uid in unreadCount)) {
           unreadCount[uid] = 0;
-          console.log('  Initialized count for', uid, 'to 0');
         }
       });
     }
-    
-    console.log('  Final unreadCount before save:', unreadCount);
     
     await setDoc(chatRef, {
       participants,
@@ -271,8 +237,6 @@ async function updateChatMetadata(chatId, lastMessage, participants, senderId) {
       lastMessageTime: serverTimestamp(),
       unreadCount
     }, { merge: true });
-    
-    console.log('  Chat metadata saved successfully');
   } catch (e) {
     console.error('Error updating chat metadata:', e);
   }
@@ -291,8 +255,6 @@ async function resetUnreadCount(chatId, userId) {
       // Only reset if there are unread messages
       if (unreadCount[userId] > 0) {
         unreadCount[userId] = 0;
-        
-        console.log('Resetting unread count for user:', userId, 'new unreadCount:', unreadCount);
         
         await updateDoc(chatRef, {
           unreadCount
@@ -412,9 +374,6 @@ function createChatId(uid1, uid2) {
 
 // Start direct message with user
 async function startDirectMessage(user) {
-  console.log('=== startDirectMessage called ===');
-  console.log('  user:', user);
-  
   closeUserSearch();
   currentDMUser = user;
   hasResetUnreadForCurrentChat = false;
@@ -426,16 +385,12 @@ async function startDirectMessage(user) {
   
   // Create chat metadata if it doesn't exist (without senderId to not increment counter)
   const chatId = createChatId(auth.currentUser.uid, user.uid);
-  console.log('  chatId:', chatId);
   
   // Check if chat exists, if not create it
   const chatRef = doc(db, 'chats', chatId);
   const chatSnap = await getDoc(chatRef);
   if (!chatSnap.exists()) {
-    console.log('  Chat does not exist, creating...');
     await updateChatMetadata(chatId, '', [auth.currentUser.uid, user.uid], null);
-  } else {
-    console.log('  Chat already exists');
   }
   
   // Reset unread count for current user when opening chat
@@ -443,7 +398,6 @@ async function startDirectMessage(user) {
   hasResetUnreadForCurrentChat = true;
   
   // Load DM messages
-  console.log('  Calling loadDMMessages...');
   loadDMMessages(user.uid);
 }
 
@@ -467,13 +421,7 @@ window.closeDMChat = () => {
 
 // Load DM messages
 function loadDMMessages(otherUserId) {
-  console.log('=== loadDMMessages called ===');
-  console.log('  otherUserId:', otherUserId);
-  console.log('  currentUser:', auth.currentUser?.uid);
-  
   const chatId = createChatId(auth.currentUser.uid, otherUserId);
-  console.log('  chatId:', chatId);
-  console.log('  Collection path: directMessages/' + chatId + '/messages');
   
   // Query in descending order to get the latest 50 messages
   const q = query(
@@ -482,47 +430,33 @@ function loadDMMessages(otherUserId) {
     limit(50)
   );
   
-  console.log('  Setting up onSnapshot listener...');
-  
   dmUnsubscribe = onSnapshot(q, async (snapshot) => {
-    console.log('=== onSnapshot triggered ===');
-    console.log('  snapshot.size:', snapshot.size);
-    console.log('  snapshot.empty:', snapshot.empty);
-    
     const msgs = document.getElementById('dmMessages');
-    console.log('  dmMessages element found:', !!msgs);
-    console.log('  Current message count:', msgs.children.length);
     
     if (msgs.children.length === 0) {
-      console.log('  Initial load - rendering all messages');
+      // Initial load - render all messages
       msgs.innerHTML = '';
       
       // Reverse the array since we queried in DESC order but want to display in ASC order
       const docsArray = snapshot.docs.slice().reverse();
       
       for (const docSnap of docsArray) {
-        console.log('  Rendering message:', docSnap.id);
         await appendDMMessage(docSnap);
       }
     } else {
-      console.log('  Incremental update');
+      // Incremental update
       snapshot.docChanges().forEach(async (change) => {
-        console.log('  Change type:', change.type, 'doc:', change.doc.id);
         if (change.type === 'added') {
           if (!document.querySelector(`[data-dm-msg-id="${change.doc.id}"]`)) {
-            console.log('  Adding new message:', change.doc.id);
-            await prependDMMessage(change.doc);
+            await appendDMMessage(change.doc);
             
             // Reset unread count when new message arrives while chat is open
             if (!hasResetUnreadForCurrentChat) {
               await resetUnreadCount(chatId, auth.currentUser.uid);
               hasResetUnreadForCurrentChat = true;
             }
-          } else {
-            console.log('  Message already exists, skipping:', change.doc.id);
           }
         } else if (change.type === 'modified') {
-          console.log('  Updating message:', change.doc.id);
           // Update message when timestamp is added by server
           await updateDMMessage(change.doc);
         }
@@ -530,99 +464,36 @@ function loadDMMessages(otherUserId) {
     }
     
     msgs.scrollTop = msgs.scrollHeight;
-    console.log('  Scrolled to bottom');
   }, (error) => {
-    console.error('=== onSnapshot ERROR ===');
-    console.error('  Error:', error);
-    console.error('  Error code:', error.code);
-    console.error('  Error message:', error.message);
+    console.error('Error in DM messages listener:', error);
   });
-  
-  console.log('  onSnapshot listener registered');
-}
-
-// Prepend single DM message (for new messages when query is DESC)
-async function prependDMMessage(docSnap) {
-  console.log('=== prependDMMessage called ===');
-  console.log('  doc.id:', docSnap.id);
-  
-  const data = docSnap.data();
-  console.log('  Message data:', data);
-  
-  const div = document.createElement('div');
-  div.className = 'message';
-  div.setAttribute('data-dm-msg-id', docSnap.id);
-  
-  let username = data.username || 'Unbekannt';
-  if (!data.username && data.uid) {
-    const userData = await loadUserData(data.uid);
-    username = userData?.username || data.uid.slice(0, 8);
-  }
-  console.log('  Username:', username);
-  
-  const usernameSpan = document.createElement('span');
-  usernameSpan.className = 'username';
-  usernameSpan.textContent = `@${username}`;
-  
-  const textSpan = document.createElement('span');
-  textSpan.className = 'text';
-  textSpan.textContent = data.text;
-  
-  div.appendChild(usernameSpan);
-  div.appendChild(textSpan);
-  
-  // Add timestamp
-  if (data.createdAt) {
-    const timeSpan = document.createElement('span');
-    timeSpan.className = 'time';
-    timeSpan.textContent = formatTimestamp(data.createdAt);
-    div.appendChild(timeSpan);
-  }
-  
-  const msgs = document.getElementById('dmMessages');
-  msgs.appendChild(div); // Append because messages are already in correct order
-  console.log('  Message appended to DOM');
 }
 
 // Update existing DM message (for timestamp updates)
 async function updateDMMessage(docSnap) {
-  console.log('=== updateDMMessage called ===');
-  console.log('  doc.id:', docSnap.id);
-  
   const existingMsg = document.querySelector(`[data-dm-msg-id="${docSnap.id}"]`);
-  if (!existingMsg) {
-    console.log('  Message element not found');
-    return;
-  }
+  if (!existingMsg) return;
   
   const data = docSnap.data();
-  console.log('  Message data:', data);
   
   // Check if timestamp element already exists
   let timeSpan = existingMsg.querySelector('.time');
   
   if (data.createdAt && !timeSpan) {
     // Add timestamp if it doesn't exist
-    console.log('  Adding timestamp');
     timeSpan = document.createElement('span');
     timeSpan.className = 'time';
     timeSpan.textContent = formatTimestamp(data.createdAt);
     existingMsg.appendChild(timeSpan);
   } else if (data.createdAt && timeSpan) {
     // Update timestamp if it exists
-    console.log('  Updating timestamp');
     timeSpan.textContent = formatTimestamp(data.createdAt);
   }
 }
 
 // Append single DM message
 async function appendDMMessage(docSnap) {
-  console.log('=== appendDMMessage called ===');
-  console.log('  doc.id:', docSnap.id);
-  
   const data = docSnap.data();
-  console.log('  Message data:', data);
-  
   const div = document.createElement('div');
   div.className = 'message';
   div.setAttribute('data-dm-msg-id', docSnap.id);
@@ -632,7 +503,6 @@ async function appendDMMessage(docSnap) {
     const userData = await loadUserData(data.uid);
     username = userData?.username || data.uid.slice(0, 8);
   }
-  console.log('  Username:', username);
   
   const usernameSpan = document.createElement('span');
   usernameSpan.className = 'username';
@@ -655,7 +525,6 @@ async function appendDMMessage(docSnap) {
   
   const msgs = document.getElementById('dmMessages');
   msgs.appendChild(div);
-  console.log('  Message appended to DOM');
 }
 
 // Send DM Message
@@ -663,14 +532,8 @@ window.sendDMMessage = async () => {
   const text = document.getElementById('dmMessageInput').value.trim();
   if (!text || !auth.currentUser || !currentUserData || !currentDMUser) return;
   
-  console.log('=== sendDMMessage called ===');
-  console.log('  text:', text);
-  console.log('  currentUser:', auth.currentUser.uid);
-  console.log('  currentDMUser:', currentDMUser.uid);
-  
   try {
     const chatId = createChatId(auth.currentUser.uid, currentDMUser.uid);
-    console.log('  chatId:', chatId);
     
     // Add message
     await addDoc(collection(db, 'directMessages', chatId, 'messages'), {
@@ -679,12 +542,9 @@ window.sendDMMessage = async () => {
       username: currentUserData.username,
       createdAt: serverTimestamp()
     });
-    console.log('  Message added to Firestore');
     
     // Update chat metadata with sender ID (this will reset sender's count to 0 and increment receiver's)
-    console.log('  Calling updateChatMetadata with senderId:', auth.currentUser.uid);
     await updateChatMetadata(chatId, text, [auth.currentUser.uid, currentDMUser.uid], auth.currentUser.uid);
-    console.log('  updateChatMetadata completed');
     
     document.getElementById('dmMessageInput').value = '';
   } catch (e) {
