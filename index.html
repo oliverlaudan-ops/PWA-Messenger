@@ -103,11 +103,12 @@
       <div id="directTab" class="tab-content hidden">
         <!-- DM User List View -->
         <div id="dmListView" class="content">
-          <div class="dm-placeholder">
-            <div class="placeholder-icon">💬</div>
-            <h3>Direktnachrichten</h3>
-            <p>Wähle einen Benutzer aus, um einen Chat zu starten.</p>
-            <button class="btn btn-primary" onclick="showUserSearch()">Benutzer suchen</button>
+          <div class="dm-list-header">
+            <h3>💬 Deine Chats</h3>
+            <button class="btn btn-primary btn-small" onclick="showUserSearch()">+ Neuer Chat</button>
+          </div>
+          <div id="dmChatList" class="dm-chat-list">
+            <div class="spinner"></div>
           </div>
         </div>
 
