@@ -233,12 +233,37 @@ function loadDMMessages(otherUserId) {
           if (!document.querySelector(`[data-dm-msg-id="${change.doc.id}"]`)) {
             await appendDMMessage(change.doc);
           }
+        } else if (change.type === 'modified') {
+          // Update message when timestamp is added by server
+          await updateDMMessage(change.doc);
         }
       });
     }
     
     msgs.scrollTop = msgs.scrollHeight;
   });
+}
+
+// Update existing DM message (for timestamp updates)
+async function updateDMMessage(docSnap) {
+  const existingMsg = document.querySelector(`[data-dm-msg-id="${docSnap.id}"]`);
+  if (!existingMsg) return;
+  
+  const data = docSnap.data();
+  
+  // Check if timestamp element already exists
+  let timeSpan = existingMsg.querySelector('.time');
+  
+  if (data.createdAt && !timeSpan) {
+    // Add timestamp if it doesn't exist
+    timeSpan = document.createElement('span');
+    timeSpan.className = 'time';
+    timeSpan.textContent = formatTimestamp(data.createdAt);
+    existingMsg.appendChild(timeSpan);
+  } else if (data.createdAt && timeSpan) {
+    // Update timestamp if it exists
+    timeSpan.textContent = formatTimestamp(data.createdAt);
+  }
 }
 
 // Append single DM message
@@ -463,12 +488,37 @@ function loadMessages() {
           if (!document.querySelector(`[data-msg-id="${change.doc.id}"]`)) {
             await appendMessage(change.doc);
           }
+        } else if (change.type === 'modified') {
+          // Update message when timestamp is added by server
+          await updateMessage(change.doc);
         }
       });
     }
     
     msgs.scrollTop = msgs.scrollHeight;
   });
+}
+
+// Update existing message (for timestamp updates)
+async function updateMessage(docSnap) {
+  const existingMsg = document.querySelector(`[data-msg-id="${docSnap.id}"]`);
+  if (!existingMsg) return;
+  
+  const data = docSnap.data();
+  
+  // Check if timestamp element already exists
+  let timeSpan = existingMsg.querySelector('.time');
+  
+  if (data.createdAt && !timeSpan) {
+    // Add timestamp if it doesn't exist
+    timeSpan = document.createElement('span');
+    timeSpan.className = 'time';
+    timeSpan.textContent = formatTimestamp(data.createdAt);
+    existingMsg.appendChild(timeSpan);
+  } else if (data.createdAt && timeSpan) {
+    // Update timestamp if it exists
+    timeSpan.textContent = formatTimestamp(data.createdAt);
+  }
 }
 
 // Helper function to append a single message
