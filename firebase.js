@@ -119,12 +119,16 @@ async function loadDMChatList() {
         const otherUser = await loadUserData(otherUserId);
         
         if (otherUser) {
+          // Get unread count for current user
+          const unreadCount = (data.unreadCount && data.unreadCount[auth.currentUser.uid]) || 0;
+          
           chats.push({
             chatId: docSnap.id,
             otherUserId,
             otherUsername: otherUser.username,
             lastMessage: data.lastMessage || '',
-            lastMessageTime: data.lastMessageTime
+            lastMessageTime: data.lastMessageTime,
+            unreadCount
           });
         }
       }
@@ -161,13 +165,28 @@ async function loadDMChatList() {
         username.className = 'user-username';
         username.textContent = `@${chat.otherUsername}`;
         
+        const rightSide = document.createElement('div');
+        rightSide.style.display = 'flex';
+        rightSide.style.alignItems = 'center';
+        rightSide.style.gap = '8px';
+        
         const time = document.createElement('div');
         time.className = 'user-email';
         time.style.fontSize = '11px';
         time.textContent = chat.lastMessageTime ? formatTimestamp(chat.lastMessageTime) : '';
         
+        rightSide.appendChild(time);
+        
+        // Add unread badge if count > 0
+        if (chat.unreadCount > 0) {
+          const badge = document.createElement('div');
+          badge.className = 'unread-badge';
+          badge.textContent = chat.unreadCount > 99 ? '99+' : chat.unreadCount;
+          rightSide.appendChild(badge);
+        }
+        
         topRow.appendChild(username);
-        topRow.appendChild(time);
+        topRow.appendChild(rightSide);
         
         const preview = document.createElement('div');
         preview.className = 'user-email';
@@ -189,17 +208,52 @@ async function loadDMChatList() {
 }
 
 // Create or update chat metadata
-async function updateChatMetadata(chatId, lastMessage, participants) {
+async function updateChatMetadata(chatId, lastMessage, participants, senderId) {
   const chatRef = doc(db, 'chats', chatId);
   
   try {
+    // Get current chat data to preserve unread counts
+    const chatSnap = await getDoc(chatRef);
+    const currentData = chatSnap.exists() ? chatSnap.data() : {};
+    
+    // Initialize unreadCount if it doesn't exist
+    const unreadCount = currentData.unreadCount || {};
+    
+    // Increment unread count for all participants except sender
+    participants.forEach(uid => {
+      if (uid !== senderId) {
+        unreadCount[uid] = (unreadCount[uid] || 0) + 1;
+      }
+    });
+    
     await setDoc(chatRef, {
       participants,
       lastMessage,
-      lastMessageTime: serverTimestamp()
+      lastMessageTime: serverTimestamp(),
+      unreadCount
     }, { merge: true });
   } catch (e) {
     console.error('Error updating chat metadata:', e);
+  }
+}
+
+// Reset unread count when user opens chat
+async function resetUnreadCount(chatId, userId) {
+  const chatRef = doc(db, 'chats', chatId);
+  
+  try {
+    const chatSnap = await getDoc(chatRef);
+    if (chatSnap.exists()) {
+      const data = chatSnap.data();
+      const unreadCount = data.unreadCount || {};
+      unreadCount[userId] = 0;
+      
+      await updateDoc(chatRef, {
+        unreadCount
+      });
+    }
+  } catch (e) {
+    console.error('Error resetting unread count:', e);
   }
 }
 
@@ -321,7 +375,10 @@ async function startDirectMessage(user) {
   
   // Create chat metadata if it doesn't exist
   const chatId = createChatId(auth.currentUser.uid, user.uid);
-  await updateChatMetadata(chatId, '', [auth.currentUser.uid, user.uid]);
+  await updateChatMetadata(chatId, '', [auth.currentUser.uid, user.uid], auth.currentUser.uid);
+  
+  // Reset unread count for current user
+  await resetUnreadCount(chatId, auth.currentUser.uid);
   
   // Load DM messages
   loadDMMessages(user.uid);
@@ -452,8 +509,8 @@ window.sendDMMessage = async () => {
       createdAt: serverTimestamp()
     });
     
-    // Update chat metadata
-    await updateChatMetadata(chatId, text, [auth.currentUser.uid, currentDMUser.uid]);
+    // Update chat metadata with sender ID
+    await updateChatMetadata(chatId, text, [auth.currentUser.uid, currentDMUser.uid], auth.currentUser.uid);
     
     document.getElementById('dmMessageInput').value = '';
   } catch (e) {
