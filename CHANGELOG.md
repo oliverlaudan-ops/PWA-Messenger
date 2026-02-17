@@ -4,26 +4,63 @@ Alle wichtigen Änderungen am PWA Messenger werden hier dokumentiert.
 
 ---
 
-## Phase 3: Gruppen-Features (In Progress) 🚀
+## Phase 3: Gruppen-Features ✅ (Abgeschlossen)
 
 ### 🆕 Neue Features
 
 #### 1. Gruppen erstellen
 - **Modal zum Erstellen neuer Gruppen**
-  - Gruppenname (Pflichtfeld, max. 50 Zeichen)
+  - Gruppenname (Pflichtfeld, 3-50 Zeichen)
   - Beschreibung (Optional, max. 200 Zeichen)
   - Creator wird automatisch Admin und Mitglied
 - **Button "+ Neue Gruppe"** im Groups-Tab
+- **Validierung**: Name-Länge, Pflichtfelder
 
-#### 2. Firestore Struktur für Gruppen
+#### 2. Gruppenliste
+- **Liste aller Gruppen** in denen der User Mitglied ist
+- **Features**:
+  - Letzte Nachricht Vorschau (max. 50 Zeichen)
+  - Zeitstempel (heute/gestern/volle Datum)
+  - Mitgliederzahl
+  - Sortierung nach letzter Aktivität
+  - **Unread Badge** (roter Kreis mit Anzahl)
+- **Empty State** wenn keine Gruppen vorhanden
+
+#### 3. Gruppenchat
+- **Echtzeit-Gruppennachrichten**
+  - Senden und Empfangen in real-time
+  - Timestamps bei jeder Nachricht
+  - Auto-Scroll zu neuesten Nachrichten
+  - Limit: 50 neueste Nachrichten (DESC Order + Reverse)
+- **Group Header**:
+  - Gruppenname mit 👥 Icon
+  - Mitgliederzahl
+  - Zurück-Button zur Gruppenliste
+- **Input** mit Enter-Support
+
+#### 4. Unread Counter für Gruppen
+- **Roter Badge** in Gruppenliste mit Anzahl ungelesener Nachrichten
+- **Badge verschwindet** beim Öffnen der Gruppe
+- **Counter wird aktualisiert** in Echtzeit
+- **Firestore Struktur**:
+  ```
+  groups/{groupId}/
+    - unreadCount: { userId1: 3, userId2: 0, userId3: 5 }
+  ```
+- **Logik**:
+  - Sender's count = 0 (immer)
+  - Alle anderen Members: +1 pro Nachricht
+  - Reset beim Öffnen der Gruppe
+
+#### 5. Firestore Struktur für Gruppen
 ```
 groups/
   {groupId}/
-    - name: string
-    - description: string
-    - createdBy: userId (Owner)
-    - members: [userId1, userId2, ...]
-    - admins: [userId1, ...]
+    - name: string (Gruppenname)
+    - description: string (Optional)
+    - createdBy: userId (Owner/Creator)
+    - members: [userId1, userId2, ...] (Array)
+    - admins: [userId1, ...] (Array)
     - createdAt: timestamp
     - lastMessage: string
     - lastMessageTime: timestamp
@@ -39,11 +76,32 @@ groupMessages/
         - createdAt: timestamp
 ```
 
-### 📝 Geplant
-- Gruppenliste mit letzter Nachricht und Unread Counter
-- Gruppenchat (senden/empfangen in Echtzeit)
-- Gruppe beitreten/verlassen
-- Admin-Features (Mitglieder verwalten, Gruppe bearbeiten/löschen)
+### 🔧 Technische Details
+
+#### Code-Struktur
+- **Neue Variablen**:
+  - `groupUnsubscribe` - Listener für Gruppennachrichten
+  - `currentGroup` - Aktuell geöffnete Gruppe
+- **Neue Funktionen**:
+  - `showCreateGroup()` - Öffnet Create Group Modal
+  - `closeCreateGroup()` - Schließt Modal
+  - `createGroup()` - Erstellt neue Gruppe in Firestore
+  - `loadGroupList()` - Lädt alle Gruppen des Users
+  - `openGroupChat()` - Öffnet Gruppenchat
+  - `closeGroupChat()` - Schließt Gruppenchat
+  - `loadGroupMessages()` - Lädt Gruppennachrichten (Listener)
+  - `appendGroupMessage()` - Fügt Nachricht zum DOM hinzu
+  - `updateGroupMessage()` - Updated Nachricht (für Timestamps)
+  - `sendGroupMessage()` - Sendet Gruppennachricht
+  - `updateGroupMetadata()` - Updated Gruppen-Metadaten (lastMessage, unreadCount)
+  - `resetGroupUnreadCount()` - Setzt Unread Counter zurück
+
+#### Ähnlichkeit zu DM System
+- Gleiche Struktur wie Direktnachrichten:
+  - Metadata Collection (`groups`) mit lastMessage, unreadCount
+  - Messages Subcollection (`groupMessages/{id}/messages`)
+  - DESC Order + Reverse für neueste Nachrichten
+  - Gleiche UI-Komponenten (Avatar, Badge, Timestamps)
 
 ---
 
@@ -164,6 +222,27 @@ directMessages/
         - uid: userId
         - username: string
         - createdAt: timestamp
+
+groups/ (Group Metadata)
+  {groupId}/
+    - name: string
+    - description: string
+    - createdBy: userId
+    - members: [userId1, userId2, ...]
+    - admins: [userId1, ...]
+    - createdAt: timestamp
+    - lastMessage: string
+    - lastMessageTime: timestamp
+    - unreadCount: { userId1: 2, userId2: 0, ... }
+
+groupMessages/
+  {groupId}/
+    messages/
+      {messageId}/
+        - text: string
+        - uid: userId
+        - username: string
+        - createdAt: timestamp
 ```
 
 ### 🎨 Design Features
@@ -242,21 +321,33 @@ service cloud.firestore {
 - Keine bekannten kritischen Bugs
 
 ### 📝 TODOs
-- [ ] Firestore Security Rules implementieren
+
+#### High Priority
+- [ ] **Firestore Security Rules** implementieren (kritisch!)
+- [ ] **Gruppe verlassen** Funktion
+- [ ] **Mitglieder zu Gruppe hinzufügen** (Admin only)
+- [ ] **Gruppe bearbeiten** (Name/Description ändern, Admin only)
+- [ ] **Gruppe löschen** (Creator only)
+
+#### Medium Priority
 - [ ] Service Worker für Offline-Support
 - [ ] Push Notifications
-- [ ] Image/File Upload
+- [ ] User Profiles (Avatar, Bio, Status)
 - [ ] Typing Indicators
 - [ ] Read Receipts
 - [ ] Message Reactions
-- [ ] User Profiles (Avatar, Bio, Status)
-- [ ] Gruppe verlassen/löschen
-- [ ] Admin Panel für Gruppen
 - [ ] Search in Messages
 - [ ] Dark Mode
+
+#### Low Priority
+- [ ] Image/File Upload
 - [ ] Emoji Picker
 - [ ] Link Previews
 - [ ] Voice Messages
+- [ ] Group Icons/Avatars
+- [ ] Public vs Private Groups
+- [ ] Group Invite Links
+- [ ] Admin Roles & Permissions
 
 ---
 
