@@ -1,6 +1,6 @@
 // firebase.config.js
 export const firebaseConfig = {
-  apiKey: "AIzaSyBlZRSrjkYYP8KtycZOah8fX-RMMnYYPj4",
+  apiKey: "AIzaSyD3UaesM5NcKvnbreJNlW-RYDxTwcibiak",
   authDomain: "pwa-messenger-oliver.firebaseapp.com",
   projectId: "pwa-messenger-oliver",
   storageBucket: "pwa-messenger-oliver.firebasestorage.app",
