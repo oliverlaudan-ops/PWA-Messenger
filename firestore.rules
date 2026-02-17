@@ -1,0 +1,178 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========================================
+    // HELPER FUNCTIONS
+    // ========================================
+    
+    // Check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Check if user is the owner of a document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Check if user is in a list of participants
+    function isParticipant(participants) {
+      return request.auth.uid in participants;
+    }
+    
+    // Check if user is a group member
+    function isGroupMember(groupData) {
+      return request.auth.uid in groupData.members;
+    }
+    
+    // Check if user is a group admin
+    function isGroupAdmin(groupData) {
+      return request.auth.uid in groupData.admins;
+    }
+    
+    // Check if user is the group creator
+    function isGroupCreator(groupData) {
+      return request.auth.uid == groupData.createdBy;
+    }
+    
+    
+    // ========================================
+    // USER PROFILES
+    // ========================================
+    
+    match /users/{userId} {
+      // Anyone authenticated can read user profiles (for username display, search, etc.)
+      allow read: if isSignedIn();
+      
+      // Users can only create/update their own profile
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      
+      // Users cannot delete their profile (optional: you can allow this if needed)
+      allow delete: if false;
+    }
+    
+    // Allow checking username uniqueness (needed for registration)
+    match /usernames/{username} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+    
+    
+    // ========================================
+    // GLOBAL GROUP CHAT (deprecated but keep for backwards compatibility)
+    // ========================================
+    
+    match /messages/{messageId} {
+      // Any authenticated user can read/write global messages
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() 
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 1000;
+      
+      // Only message sender can update/delete their own messages
+      allow update, delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+    
+    
+    // ========================================
+    // DIRECT MESSAGES (DMs)
+    // ========================================
+    
+    // Chat metadata (lastMessage, unreadCount, etc.)
+    match /chats/{chatId} {
+      // Only participants can read chat metadata
+      allow read: if isSignedIn() && isParticipant(resource.data.participants);
+      
+      // Only participants can create chat (when first message is sent)
+      allow create: if isSignedIn() 
+        && isParticipant(request.resource.data.participants)
+        && request.resource.data.participants.size() == 2;
+      
+      // Only participants can update chat metadata (lastMessage, unreadCount)
+      allow update: if isSignedIn() && isParticipant(resource.data.participants);
+      
+      // Nobody can delete chats (optional: allow participants to delete)
+      allow delete: if false;
+    }
+    
+    // Individual DM messages
+    match /directMessages/{chatId}/messages/{messageId} {
+      // Only participants can read messages
+      allow read: if isSignedIn() 
+        && isParticipant(get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
+      
+      // Only participants can send messages
+      allow create: if isSignedIn() 
+        && isParticipant(get(/databases/$(database)/documents/chats/$(chatId)).data.participants)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 1000;
+      
+      // Only message sender can update/delete their own messages
+      allow update, delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+    
+    
+    // ========================================
+    // GROUPS
+    // ========================================
+    
+    // Group metadata
+    match /groups/{groupId} {
+      // Only group members can read group data
+      allow read: if isSignedIn() && isGroupMember(resource.data);
+      
+      // Any authenticated user can create a group
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 50
+        && request.auth.uid in request.resource.data.members
+        && request.auth.uid in request.resource.data.admins;
+      
+      // Only admins can update group metadata (name, description, add/remove members)
+      allow update: if isSignedIn() 
+        && isGroupAdmin(resource.data)
+        // Ensure creator doesn't get removed from admins
+        && resource.data.createdBy in request.resource.data.admins;
+      
+      // Only the creator can delete the group
+      allow delete: if isSignedIn() && isGroupCreator(resource.data);
+    }
+    
+    // Group messages
+    match /groupMessages/{groupId}/messages/{messageId} {
+      // Only group members can read messages
+      allow read: if isSignedIn() 
+        && isGroupMember(get(/databases/$(database)/documents/groups/$(groupId)).data);
+      
+      // Only group members can send messages
+      allow create: if isSignedIn() 
+        && isGroupMember(get(/databases/$(database)/documents/groups/$(groupId)).data)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 1000;
+      
+      // Only message sender can update/delete their own messages
+      allow update, delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+    
+    
+    // ========================================
+    // DEFAULT: DENY ALL OTHER ACCESS
+    // ========================================
+    
+    // Explicitly deny access to any other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
