@@ -108,6 +108,9 @@ export async function setUsername() {
     // Trigger group list load
     window.dispatchEvent(new CustomEvent('loadGroupList'));
     
+    // Trigger notification initialization
+    window.dispatchEvent(new CustomEvent('userLoggedIn'));
+    
     document.getElementById('userInfo').textContent = `@${username}`;
     
   } catch (e) {
@@ -133,6 +136,9 @@ export function initAuthListener() {
         
         // Trigger group list load
         window.dispatchEvent(new CustomEvent('loadGroupList'));
+        
+        // Trigger notification initialization
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
         
         document.getElementById('userInfo').textContent = `@${userData.username}`;
       } else {
