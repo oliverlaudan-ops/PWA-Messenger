@@ -4,6 +4,185 @@ Alle wichtigen Änderungen am PWA Messenger werden hier dokumentiert.
 
 ---
 
+## Phase 5: Gruppenmitgliederverwaltung ✅ (Abgeschlossen - Feb 18, 2026)
+
+### 🆕 Neue Features
+
+#### 1. Vollständiges Permission-System
+- **3 Rollen mit unterschiedlichen Rechten**:
+  - 👑 **Creator**: Volle Kontrolle + Gruppe löschen
+  - ⚡ **Admin**: Verwaltung + Gruppe bearbeiten
+  - 👤 **Member**: Grundrechte + Gruppe verlassen
+
+#### 2. Creator-Rechte (👑)
+- Admins ernennen/Admin-Status entziehen
+- Mitglieder hinzufügen/entfernen
+- Gruppe umbenennen
+- Gruppenbeschreibung ändern
+- Gruppe löschen (mit Doppelbestätigung)
+- Kann nicht aus Gruppe entfernt werden
+
+#### 3. Admin-Rechte (⚡)
+- Admins ernennen
+- Eigenen Admin-Status entfernen
+- Mitglieder hinzufügen/entfernen
+- Gruppe umbenennen
+- Gruppenbeschreibung ändern
+
+#### 4. Member-Rechte (👤)
+- Gruppe verlassen
+- Nachrichten lesen/schreiben
+
+#### 5. UI Features
+- **Members Modal erweitert**:
+  - "➕ Mitglied hinzufügen" Button (Admins+)
+  - "⚙️ Gruppeneinstellungen" Button (Admins+)
+  - 👑 Creator Badge
+  - ⚡ Admin Badge
+  - Action-Buttons pro Mitglied (rollenbasiert)
+  - "🗑️ Entfernen" Button für andere Mitglieder
+  - "🚪 Verlassen" Button für sich selbst
+  - Admin Toggle Button
+
+- **Group Settings Modal** (neu):
+  - Gruppenname bearbeiten
+  - Beschreibung bearbeiten
+  - "🗑️ Gruppe löschen" Button (nur Creator)
+  - Dynamisch erstellt (kein HTML-Template)
+
+- **Add Member Modal**:
+  - Wiederverwendet User-Search Modal
+  - Zeigt nur User die noch nicht Mitglied sind
+  - Direktes Hinzufügen per Klick
+
+### 🔧 Technische Details
+
+#### Neues Modul: `modules/groupMembers.js`
+- **Permission-Checker**:
+  - `isCreator(groupData, userId)`
+  - `isAdmin(groupData, userId)`
+  - `canManageMembers(groupData, userId)`
+  - `canManageAdmins(groupData, userId)`
+  - `canEditGroup(groupData, userId)`
+  - `canDeleteGroup(groupData, userId)`
+
+- **Member Management**:
+  - `showGroupMembers()` - Erweiterte Mitgliederliste mit Actions
+  - `addMemberToGroup(groupId, userId, username)`
+  - `removeMember(groupId, userId, username)`
+  - `leaveGroup(groupId)`
+  - `makeAdmin(groupId, userId, username)`
+  - `removeAdmin(groupId, userId, username)`
+
+- **Group Settings**:
+  - `showGroupSettings(groupId, groupData)`
+  - `updateGroupSettings(groupId)`
+  - `deleteGroup(groupId)` - Mit doppelter Bestätigung
+
+#### Firestore Updates
+- `arrayUnion()` / `arrayRemove()` für members/admins Arrays
+- `updateDoc()` für Gruppen-Metadaten
+- `deleteDoc()` für Gruppen-Löschung
+- Unread Counter wird automatisch für neue Members initialisiert
+
+---
+
+## Phase 4: Modulare Architektur ✅ (Abgeschlossen - Feb 18, 2026)
+
+### ♻️ Refactoring: Modularisierung
+
+#### Problem
+- `firebase.js` war 35KB groß und unübersichtlich
+- Alle Funktionen in einer Datei
+- Schwer zu warten und zu erweitern
+
+#### Lösung: Modular Architecture
+```
+modules/
+├── state.js          (~2KB)  - Firebase init & shared state
+├── ui.js             (~1.5KB) - UI helpers & formatting  
+├── users.js          (~3KB)  - User search & caching
+├── auth.js           (~3.5KB) - Authentication
+├── groups.js         (~11KB) - Group functionality
+├── directMessages.js (~10KB) - DM functionality
+└── groupMembers.js   (~15KB) - Member management
+
+app.js                (~2KB) - Main entry point
+```
+
+#### Module Details
+
+**`state.js`**
+- Firebase Konfiguration und Initialisierung
+- Export von `auth`, `db`
+- Shared State (currentUserData, subscriptions, userCache)
+- State Setter-Funktionen
+- `clearState()` für Logout
+
+**`ui.js`**
+- `formatTimestamp()` - Zeitstempel formatieren
+- `showScreen()` - Screen Management
+- `showError()` - Error Messages
+- `switchTab()` - Tab Navigation
+
+**`users.js`**
+- `loadUserData()` - Mit Caching
+- `loadAllUsers()` - Alle User laden
+- `renderUserList()` - User-Liste rendern
+- `showUserSearch()` - User-Such-Modal
+- `filterUsers()` - Suchfilter
+
+**`auth.js`**
+- `signup()` - Registrierung
+- `login()` - Login
+- `logout()` - Logout mit State-Cleanup
+- `setUsername()` - Username Setup
+- `initAuthListener()` - Auth State Observer
+
+**`groups.js`**
+- Alle Gruppen-Funktionen aus firebase.js
+- Create, List, Open, Close
+- Messages laden und senden
+- Metadata Updates
+- Unread Counter
+
+**`directMessages.js`**
+- Alle DM-Funktionen aus firebase.js
+- Chat List, Open, Close
+- Messages laden und senden
+- Chat Metadata
+- Unread Counter
+
+**`groupMembers.js`** (neu)
+- Member Management (siehe Phase 5)
+- Permission System
+- Group Settings
+
+**`app.js`**
+- Haupt-Entry-Point
+- Importiert alle Module
+- Exposed Funktionen für `window` (für onclick-Handler)
+- Event Listeners für Cross-Module Communication
+- Initialisiert Auth Listener
+
+### ✅ Vorteile
+
+1. **Übersichtlich**: Jede Datei hat klare Verantwortung
+2. **Wartbar**: Bugs leichter zu finden und zu fixen
+3. **Erweiterbar**: Neue Features einfach als Modul hinzufügen
+4. **Wiederverwendbar**: Module können importiert werden
+5. **Testbar**: Jedes Modul kann einzeln getestet werden
+6. **Kleiner**: Einzelne Dateien sind viel kleiner
+
+### 🗑️ Cleanup
+- `firebase.js` archiviert als `firebase.js.old`
+- `firebase-members.js` gelöscht (durch groupMembers.js ersetzt)
+- `firebase-patch-groupid.js` gelöscht (nicht mehr nötig)
+- `firebase-patch.js` gelöscht
+- `firebase-globals.js` gelöscht
+
+---
+
 ## Phase 3: Gruppen-Features ✅ (Abgeschlossen)
 
 ### 🆕 Neue Features
@@ -36,9 +215,16 @@ Alle wichtigen Änderungen am PWA Messenger werden hier dokumentiert.
   - Gruppenname mit 👥 Icon
   - Mitgliederzahl
   - Zurück-Button zur Gruppenliste
+  - "👥 Mitglieder" Button
 - **Input** mit Enter-Support
 
-#### 4. Unread Counter für Gruppen
+#### 4. Gruppenmitglieder anzeigen
+- **Modal mit Mitgliederliste**
+- **Badges**: 👑 Creator, ⚡ Admin
+- Anzeige von Username und E-Mail
+- Mitgliederzahl im Header
+
+#### 5. Unread Counter für Gruppen
 - **Roter Badge** in Gruppenliste mit Anzahl ungelesener Nachrichten
 - **Badge verschwindet** beim Öffnen der Gruppe
 - **Counter wird aktualisiert** in Echtzeit
@@ -51,57 +237,6 @@ Alle wichtigen Änderungen am PWA Messenger werden hier dokumentiert.
   - Sender's count = 0 (immer)
   - Alle anderen Members: +1 pro Nachricht
   - Reset beim Öffnen der Gruppe
-
-#### 5. Firestore Struktur für Gruppen
-```
-groups/
-  {groupId}/
-    - name: string (Gruppenname)
-    - description: string (Optional)
-    - createdBy: userId (Owner/Creator)
-    - members: [userId1, userId2, ...] (Array)
-    - admins: [userId1, ...] (Array)
-    - createdAt: timestamp
-    - lastMessage: string
-    - lastMessageTime: timestamp
-    - unreadCount: { userId1: 2, userId2: 0, ... }
-
-groupMessages/
-  {groupId}/
-    messages/
-      {messageId}/
-        - text: string
-        - uid: userId
-        - username: string
-        - createdAt: timestamp
-```
-
-### 🔧 Technische Details
-
-#### Code-Struktur
-- **Neue Variablen**:
-  - `groupUnsubscribe` - Listener für Gruppennachrichten
-  - `currentGroup` - Aktuell geöffnete Gruppe
-- **Neue Funktionen**:
-  - `showCreateGroup()` - Öffnet Create Group Modal
-  - `closeCreateGroup()` - Schließt Modal
-  - `createGroup()` - Erstellt neue Gruppe in Firestore
-  - `loadGroupList()` - Lädt alle Gruppen des Users
-  - `openGroupChat()` - Öffnet Gruppenchat
-  - `closeGroupChat()` - Schließt Gruppenchat
-  - `loadGroupMessages()` - Lädt Gruppennachrichten (Listener)
-  - `appendGroupMessage()` - Fügt Nachricht zum DOM hinzu
-  - `updateGroupMessage()` - Updated Nachricht (für Timestamps)
-  - `sendGroupMessage()` - Sendet Gruppennachricht
-  - `updateGroupMetadata()` - Updated Gruppen-Metadaten (lastMessage, unreadCount)
-  - `resetGroupUnreadCount()` - Setzt Unread Counter zurück
-
-#### Ähnlichkeit zu DM System
-- Gleiche Struktur wie Direktnachrichten:
-  - Metadata Collection (`groups`) mit lastMessage, unreadCount
-  - Messages Subcollection (`groupMessages/{id}/messages`)
-  - DESC Order + Reverse für neueste Nachrichten
-  - Gleiche UI-Komponenten (Avatar, Badge, Timestamps)
 
 ---
 
@@ -125,27 +260,12 @@ groupMessages/
 - **Roter Badge** in Chat-Liste mit Anzahl ungelesener Nachrichten
 - **Badge verschwindet** beim Öffnen des Chats
 - **Counter wird aktualisiert** in Echtzeit
-- **Firestore Struktur** für Unread Counts:
-  ```
-  chats/{chatId}/
-    - unreadCount: { userId1: 3, userId2: 0 }
-  ```
 
 #### 3. User Search Modal
 - **Modal zum Starten neuer Chats**
 - **Suche** nach Username oder E-Mail
 - **Filterfunktion** in Echtzeit
 - Liste aller verfügbaren User (außer sich selbst)
-
-### 🐛 Bug Fixes
-- **Fix: Nachrichten erscheinen jetzt im Verlauf**
-  - Problem: `limit(50)` lud nur älteste 50 Nachrichten
-  - Lösung: Query mit `orderBy('createdAt', 'desc')` lädt neueste 50
-  - Nachrichten werden beim Initial Load umgedreht für richtige Reihenfolge
-
-### 🧹 Code Cleanup
-- Entfernung aller Debug-Logs (außer Error Logging)
-- Console ist jetzt sauber und übersichtlich
 
 ---
 
@@ -172,39 +292,22 @@ groupMessages/
 - **Timestamps** bei jeder Nachricht
 - **Username-Anzeige** bei jeder Nachricht
 - Auto-Scroll zu neuesten Nachrichten
-- Limit: 50 neueste Nachrichten
 
 #### 4. UI/UX
 - **Responsive Design** (Mobile-First)
-- **Screen Management**:
-  - Login Screen
-  - Register Screen
-  - Username Setup Screen
-  - Chat Screen
 - **Modern Design** mit Gradients und Glasmorphism
 - **Loading States** (Spinner während Daten laden)
 - **Error Messages** mit Auto-Hide (5 Sekunden)
 
-#### 5. PWA Features
-- **Manifest.json** für App-Installation
-- **Service Worker** (Basic Setup)
-- **Meta Tags** für Mobile Optimization
-- **Theme Color** (#667eea)
+---
 
-### 🗄️ Firestore Struktur
+## 🗄️ Firestore Struktur
 
 ```
 users/
   {uid}/
     - username: string
     - email: string
-    - createdAt: timestamp
-
-messages/ (Global Group Chat)
-  {messageId}/
-    - text: string
-    - uid: userId
-    - username: string
     - createdAt: timestamp
 
 chats/ (DM Metadata)
@@ -227,7 +330,7 @@ groups/ (Group Metadata)
   {groupId}/
     - name: string
     - description: string
-    - createdBy: userId
+    - createdBy: userId (Creator)
     - members: [userId1, userId2, ...]
     - admins: [userId1, ...]
     - createdAt: timestamp
@@ -245,112 +348,19 @@ groupMessages/
         - createdAt: timestamp
 ```
 
-### 🎨 Design Features
-- **Color Scheme**: Lila-Blau Gradient (#667eea → #764ba2)
-- **Card-Based Layout** mit Shadows
-- **Smooth Transitions** und Hover-Effekte
-- **Custom Scrollbar** (WebKit)
-- **Avatar Bubbles** (Ersten Buchstabe des Usernames)
-
-### 📱 PWA Manifest
-- **Name**: PWA Messenger
-- **Icons**: 192x192 und 512x512
-- **Display**: standalone
-- **Theme**: #667eea
-
 ---
 
-## Technische Details
+## 📊 Tech Stack
 
-### Tech Stack
 - **Frontend**: Vanilla JavaScript (ES6 Modules)
 - **Backend**: Firebase (Firestore + Auth)
 - **CSS**: Custom CSS mit CSS Variables
 - **PWA**: Service Worker + Manifest
-
-### Firestore Security Rules (TODO)
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Users can only read/write their own user doc
-    match /users/{userId} {
-      allow read: if true;
-      allow write: if request.auth.uid == userId;
-    }
-    
-    // Anyone authenticated can read/write messages (for now)
-    match /messages/{messageId} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // DM chats - only participants can read/write
-    match /chats/{chatId} {
-      allow read, write: if request.auth.uid in resource.data.participants;
-    }
-    
-    match /directMessages/{chatId}/messages/{messageId} {
-      allow read, write: if request.auth != null; // TODO: Check participants
-    }
-    
-    // Groups - only members can read/write
-    match /groups/{groupId} {
-      allow read: if request.auth.uid in resource.data.members;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth.uid in resource.data.admins;
-    }
-    
-    match /groupMessages/{groupId}/messages/{messageId} {
-      allow read: if request.auth != null; // TODO: Check group membership
-      allow write: if request.auth != null;
-    }
-  }
-}
-```
-
-### Performance Optimizations
-- **User Data Caching** (in-memory Cache für geladene User-Daten)
-- **Pagination** mit `limit(50)` für Nachrichten
-- **DESC Order + Reverse** für effizientes Laden neuester Nachrichten
+- **Architecture**: Modular (siehe Phase 4)
 
 ---
 
-## Known Issues & TODOs
+## 👥 Contributors
 
-### 🐛 Known Issues
-- Keine bekannten kritischen Bugs
-
-### 📝 TODOs
-
-#### High Priority
-- [ ] **Firestore Security Rules** implementieren (kritisch!)
-- [ ] **Gruppe verlassen** Funktion
-- [ ] **Mitglieder zu Gruppe hinzufügen** (Admin only)
-- [ ] **Gruppe bearbeiten** (Name/Description ändern, Admin only)
-- [ ] **Gruppe löschen** (Creator only)
-
-#### Medium Priority
-- [ ] Service Worker für Offline-Support
-- [ ] Push Notifications
-- [ ] User Profiles (Avatar, Bio, Status)
-- [ ] Typing Indicators
-- [ ] Read Receipts
-- [ ] Message Reactions
-- [ ] Search in Messages
-- [ ] Dark Mode
-
-#### Low Priority
-- [ ] Image/File Upload
-- [ ] Emoji Picker
-- [ ] Link Previews
-- [ ] Voice Messages
-- [ ] Group Icons/Avatars
-- [ ] Public vs Private Groups
-- [ ] Group Invite Links
-- [ ] Admin Roles & Permissions
-
----
-
-## Contributors
 - **Oliver Laudan** (@oliverlaudan-ops) - Main Developer
 - **Perplexity AI** - Development Assistant
