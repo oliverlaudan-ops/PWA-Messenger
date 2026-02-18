@@ -29,6 +29,21 @@ import {
   updateGroupSettings,
   deleteGroup
 } from './modules/groupMembers.js';
+import {
+  initNotifications,
+  requestNotificationPermission,
+  toggleNotifications,
+  toggleNotificationSound,
+  muteChat,
+  unmuteChat,
+  isChatMuted,
+  enableDoNotDisturb,
+  disableDoNotDisturb,
+  isDoNotDisturbActive,
+  getNotificationSettings,
+  updateAppBadge,
+  clearAppBadge
+} from './modules/notifications.js';
 
 // Expose functions to window for onclick handlers in HTML
 window.showLogin = () => showScreen('loginScreen');
@@ -59,6 +74,60 @@ window.filterUsers = filterUsers;
 window.closeDMChat = closeDMChat;
 window.sendDMMessage = sendDMMessage;
 
+// Notification functions
+window.requestNotifications = requestNotificationPermission;
+window.toggleNotifications = toggleNotifications;
+window.toggleNotificationSound = toggleNotificationSound;
+window.muteChat = muteChat;
+window.unmuteChat = unmuteChat;
+window.isChatMuted = isChatMuted;
+window.enableDoNotDisturb = enableDoNotDisturb;
+window.disableDoNotDisturb = disableDoNotDisturb;
+window.isDoNotDisturbActive = isDoNotDisturbActive;
+window.getNotificationSettings = getNotificationSettings;
+window.showNotificationSettings = showNotificationSettings;
+window.closeNotificationSettings = closeNotificationSettings;
+
+// Notification Settings Modal
+function showNotificationSettings() {
+  const modal = document.getElementById('notificationSettingsModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    updateNotificationSettingsUI();
+  }
+}
+
+function closeNotificationSettings() {
+  const modal = document.getElementById('notificationSettingsModal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+function updateNotificationSettingsUI() {
+  const settings = getNotificationSettings();
+  
+  const enabledToggle = document.getElementById('notificationsEnabled');
+  const soundToggle = document.getElementById('notificationSound');
+  const dndStatus = document.getElementById('dndStatus');
+  
+  if (enabledToggle) enabledToggle.checked = settings.enabled;
+  if (soundToggle) soundToggle.checked = settings.sound;
+  
+  if (dndStatus) {
+    if (settings.doNotDisturb) {
+      if (settings.doNotDisturbUntil) {
+        const until = new Date(settings.doNotDisturbUntil);
+        dndStatus.textContent = `Aktiv bis ${until.toLocaleString('de-DE')}`;
+      } else {
+        dndStatus.textContent = 'Aktiv';
+      }
+    } else {
+      dndStatus.textContent = 'Inaktiv';
+    }
+  }
+}
+
 // Event listeners for cross-module communication
 window.addEventListener('loadGroupList', () => {
   loadGroupList();
@@ -72,7 +141,55 @@ window.addEventListener('startDirectMessage', (e) => {
   startDirectMessage(e.detail);
 });
 
+// Listen for service worker messages (notification clicks)
+navigator.serviceWorker?.addEventListener('message', (event) => {
+  console.log('Message from SW:', event.data);
+  
+  if (event.data.type === 'NOTIFICATION_CLICKED') {
+    const { data } = event.data;
+    
+    // Navigate to the relevant chat
+    if (data.chatId && data.chatType === 'group') {
+      openGroupChat(data.chatId, data.chatName || 'Gruppe');
+    } else if (data.chatId && data.chatType === 'dm') {
+      // Handle DM navigation
+      const userId = data.userId;
+      const username = data.username;
+      if (userId && username) {
+        startDirectMessage({ uid: userId, username: username });
+      }
+    }
+  }
+  
+  if (event.data.type === 'BADGE_UPDATE') {
+    updateAppBadge(event.data.count);
+  }
+});
+
+// Check URL parameters for deep linking from notifications
+window.addEventListener('load', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const openChat = urlParams.get('openChat');
+  const chatType = urlParams.get('type');
+  
+  if (openChat && chatType) {
+    setTimeout(() => {
+      if (chatType === 'group') {
+        openGroupChat(openChat, 'Gruppe');
+      }
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }, 1000);
+  }
+});
+
 // Initialize auth state listener
 initAuthListener();
+
+// Initialize notifications when user is logged in
+window.addEventListener('userLoggedIn', async () => {
+  console.log('User logged in, initializing notifications...');
+  await initNotifications();
+});
 
 console.log('✅ App initialized - modular structure loaded');
