@@ -5,15 +5,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/fireba
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
-// Firebase configuration
+// Firebase configuration - NEW WEB APP V2
 const firebaseConfig = {
-  apiKey: "AIzaSyDd04hw7kkLI0-vJWjXhpVwRlp-WBMYuV8",
+  apiKey: "AIzaSyDlaUIHlW8WXYtOw41_41HQvIey3zVblgI",
   authDomain: "pwa-messenger-oliver.firebaseapp.com",
   projectId: "pwa-messenger-oliver",
   storageBucket: "pwa-messenger-oliver.firebasestorage.app",
   messagingSenderId: "171952836516",
-  appId: "1:171952836516:web:427a7829345cde6ed8fb31",
-  measurementId: "G-0w21RL0G06"
+  appId: "1:171952836516:web:171949632144cfa4d8fb31",
+  measurementId: "G-2H9R8P1KS8"
 };
 
 // Initialize Firebase
