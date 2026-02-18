@@ -17,7 +17,7 @@ let notificationSettings = {
 
 // VAPID Key - Muss in Firebase Console generiert werden
 // Cloud Messaging → Web Configuration → Web Push certificates
-const VAPID_KEY = 'DEIN_VAPID_KEY_HIER'; // TODO: Replace with actual VAPID key
+const VAPID_KEY = 'BJN1R7PuO5Td7DNzUOOoZvxrlKht9I06-qaa8XnR11q3DKEFHagPYjRRcdwFVY7jo7N6eG0fvaP5hTr0YtMCL1o'; // TODO: Replace with actual VAPID key
 
 /**
  * Initialize Firebase Cloud Messaging
