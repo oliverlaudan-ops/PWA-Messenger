@@ -3,7 +3,7 @@
 
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-messaging.js";
 import { doc, setDoc, updateDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
-import { auth, db } from '../firebase.js';
+import { auth, db } from './state.js';
 
 let messaging = null;
 let currentFCMToken = null;
@@ -17,7 +17,7 @@ let notificationSettings = {
 
 // VAPID Key - Muss in Firebase Console generiert werden
 // Cloud Messaging → Web Configuration → Web Push certificates
-const VAPID_KEY = 'BJN1R7PuO5Td7DNzUOOoZvxrlKht9I06-qaa8XnR11q3DKEFHagPYjRRcdwFVY7jo7N6eG0fvaP5hTr0YtMCL1o'; // TODO: Replace with actual VAPID key
+const VAPID_KEY = 'BJN1R7PuO5Td7DNzUOOoZvxrlKht9I06-qaa8XnR11q3DKEFHagPYjRRcdwFVY7jo7N6eG0fvaP5hTr0YtMCL1o';
 
 /**
  * Initialize Firebase Cloud Messaging
@@ -51,12 +51,14 @@ export async function initNotifications() {
     if (Notification.permission === 'granted') {
       await registerFCMToken();
       setupForegroundListener();
+      updateNotificationUI(true);
       console.log('✅ Notifications initialized');
       return true;
     }
 
     if (Notification.permission === 'denied') {
       console.log('❌ Notification permission denied');
+      updateNotificationUI(false);
       return false;
     }
 
@@ -71,9 +73,10 @@ export async function initNotifications() {
  */
 export async function requestNotificationPermission() {
   try {
+    console.log('📥 Requesting notification permission...');
+    
     if (!messaging) {
-      console.error('Messaging not initialized');
-      return false;
+      messaging = getMessaging();
     }
 
     const permission = await Notification.requestPermission();
@@ -85,6 +88,12 @@ export async function requestNotificationPermission() {
       
       // Update UI
       updateNotificationUI(true);
+      
+      // Show success notification
+      new Notification('🎉 Benachrichtigungen aktiviert!', {
+        body: 'Du erhältst jetzt Benachrichtigungen bei neuen Nachrichten',
+        icon: '/icon-192x192.png'
+      });
       
       return true;
     } else {
@@ -409,11 +418,14 @@ export function isDoNotDisturbActive() {
  * Update notification UI elements
  */
 function updateNotificationUI(enabled) {
-  // Update bell icon or notification toggle button
-  const notificationBtn = document.getElementById('notificationToggle');
-  if (notificationBtn) {
-    notificationBtn.textContent = enabled ? '🔔' : '🔕';
-    notificationBtn.title = enabled ? 'Benachrichtigungen an' : 'Benachrichtigungen aus';
+  // Update bell icon
+  const notifyBtn = document.getElementById('notifyBtn');
+  if (notifyBtn) {
+    notifyBtn.textContent = enabled ? '🔔' : '🔕';
+    notifyBtn.title = enabled ? 'Benachrichtigungen aktiv' : 'Benachrichtigungen inaktiv';
+    console.log(`🔔 UI updated: ${enabled ? 'active' : 'inactive'}`);
+  } else {
+    console.log('⚠️  notifyBtn element not found');
   }
 }
 
