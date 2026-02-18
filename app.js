@@ -23,6 +23,12 @@ import {
   closeUserSearch, 
   filterUsers 
 } from './modules/users.js';
+import {
+  showGroupMembers,
+  closeGroupMembers,
+  updateGroupSettings,
+  deleteGroup
+} from './modules/groupMembers.js';
 
 // Expose functions to window for onclick handlers in HTML
 window.showLogin = () => showScreen('loginScreen');
@@ -40,6 +46,11 @@ window.createGroup = createGroup;
 window.openGroupChat = openGroupChat;
 window.closeGroupChat = closeGroupChat;
 window.sendGroupMessage = sendGroupMessage;
+
+window.showGroupMembers = showGroupMembers;
+window.closeGroupMembers = closeGroupMembers;
+window.updateGroupSettings = updateGroupSettings;
+window.deleteGroup = deleteGroup;
 
 window.showUserSearch = showUserSearch;
 window.closeUserSearch = closeUserSearch;
