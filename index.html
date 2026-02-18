@@ -99,7 +99,7 @@
         </div>
 
         <!-- Group Chat View -->
-        <div id="groupChatView" class="content hidden">
+        <div id="groupChatView" class="content hidden" data-group-id="">
           <div class="chat-header dm-chat-header">
             <button class="back-btn" onclick="closeGroupChat()">←</button>
             <div class="dm-chat-info">
@@ -196,15 +196,15 @@
   <div id="groupMembersModal" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>👥 Gruppenmitglieder</h2>
+        <h2 id="membersModalTitle">👥 Gruppenmitglieder</h2>
         <button class="close-btn" onclick="closeGroupMembers()">×</button>
       </div>
       <div class="modal-body">
-        <div id="membersList" class="user-list">
+        <div id="groupMembersList" class="user-list">
           <div class="spinner"></div>
         </div>
         <div class="members-count">
-          <strong id="membersCountText">0 Mitglieder</strong>
+          <strong id="membersCount">0 Mitglieder</strong>
         </div>
       </div>
     </div>
@@ -212,5 +212,27 @@
 
   <script type="module" src="firebase.js"></script>
   <script type="module" src="firebase-members.js"></script>
+  
+  <!-- Patch to set data-group-id when opening group chat -->
+  <script>
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', () => {
+      // Store original openGroupChat function
+      const originalOpenGroupChat = window.openGroupChat;
+      
+      // Override with patched version
+      window.openGroupChat = function(groupId, groupName) {
+        // Set data attribute BEFORE calling original function
+        document.getElementById('groupChatView').dataset.groupId = groupId;
+        
+        // Call original function if it exists
+        if (originalOpenGroupChat) {
+          return originalOpenGroupChat.call(this, groupId, groupName);
+        }
+      };
+      
+      console.log('✅ Group ID tracking patch loaded');
+    });
+  </script>
 </body>
 </html>
