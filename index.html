@@ -210,29 +210,11 @@
     </div>
   </div>
 
+  <!-- Load Firebase modules -->
   <script type="module" src="firebase.js"></script>
   <script type="module" src="firebase-members.js"></script>
   
-  <!-- Patch to set data-group-id when opening group chat -->
-  <script>
-    // Wait for DOM to be ready
-    document.addEventListener('DOMContentLoaded', () => {
-      // Store original openGroupChat function
-      const originalOpenGroupChat = window.openGroupChat;
-      
-      // Override with patched version
-      window.openGroupChat = function(groupId, groupName) {
-        // Set data attribute BEFORE calling original function
-        document.getElementById('groupChatView').dataset.groupId = groupId;
-        
-        // Call original function if it exists
-        if (originalOpenGroupChat) {
-          return originalOpenGroupChat.call(this, groupId, groupName);
-        }
-      };
-      
-      console.log('✅ Group ID tracking patch loaded');
-    });
-  </script>
+  <!-- Patch script that waits for openGroupChat to be ready -->
+  <script src="firebase-patch-groupid.js"></script>
 </body>
 </html>
