@@ -1,11 +1,19 @@
+import { getDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { db, auth } from './firebase.js';
+
 // ============================================
 // GROUP MEMBERS FUNCTIONS
 // ============================================
-// Add this to the end of firebase.js
 
 // Show Group Members Modal
 window.showGroupMembers = async () => {
-  if (!currentGroup) return;
+  // Get currentGroup from window (it's set globally in firebase.js)
+  const currentGroup = window.currentGroup;
+  
+  if (!currentGroup) {
+    console.error('No current group selected');
+    return;
+  }
   
   const modal = document.getElementById('groupMembersModal');
   modal.classList.remove('hidden');
@@ -37,9 +45,9 @@ window.showGroupMembers = async () => {
     
     membersList.innerHTML = '';
     
-    // Load all member data
+    // Load all member data using the global loadUserData function
     for (const memberId of members) {
-      const memberData = await loadUserData(memberId);
+      const memberData = await window.loadUserData(memberId);
       
       if (memberData) {
         const memberItem = document.createElement('div');
