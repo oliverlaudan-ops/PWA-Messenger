@@ -74,7 +74,7 @@
         <h1>💬 PWA Messenger</h1>
         <div style="display: flex; align-items: center; gap: 10px;">
           <span id="userInfo" class="user-info-header"></span>
-          <button id="notifyBtn" onclick="requestNotify()" 
+          <button id="notifyBtn" onclick="requestNotifications()" 
                   style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px;"
                   title="Benachrichtigungen aktivieren">🔕</button>
         </div>
@@ -215,45 +215,7 @@
     </div>
   </div>
 
-  <!-- Simple Client-Side Notifications -->
-  <script>
-    let notifyEnabled = false;
-    
-    window.requestNotify = async function() {
-      if (!('Notification' in window)) {
-        alert('Dein Browser unterstützt keine Benachrichtigungen');
-        return;
-      }
-      
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        notifyEnabled = true;
-        document.getElementById('notifyBtn').textContent = '🔔';
-        document.getElementById('notifyBtn').title = 'Benachrichtigungen aktiv';
-        new Notification('🎉 Benachrichtigungen aktiviert!', {
-          body: 'Du erhältst jetzt Benachrichtigungen bei neuen Nachrichten',
-          icon: '/icon-192x192.png'
-        });
-        console.log('✅ Notifications enabled');
-      } else {
-        alert('Benachrichtigungen wurden blockiert. Bitte aktiviere sie in den Browser-Einstellungen.');
-      }
-    }
-    
-    // Check permission on load
-    if (Notification.permission === 'granted') {
-      notifyEnabled = true;
-      setTimeout(() => {
-        const btn = document.getElementById('notifyBtn');
-        if (btn) {
-          btn.textContent = '🔔';
-          btn.title = 'Benachrichtigungen aktiv';
-        }
-      }, 1000);
-    }
-  </script>
-
-  <!-- Load modular app -->
+  <!-- Load modular app FIRST -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
