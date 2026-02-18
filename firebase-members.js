@@ -2,24 +2,61 @@
 // Group members functionality
 
 import { db, auth } from './firebase.js';
-import { getDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getDoc, doc, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+// Get current group ID by finding the active group
+async function getCurrentGroupId() {
+  // Method 1: Try to get from data attribute
+  const groupChatView = document.getElementById('groupChatView');
+  if (groupChatView && groupChatView.dataset.groupId) {
+    return groupChatView.dataset.groupId;
+  }
+  
+  // Method 2: Parse from current group name and find in Firestore
+  const groupNameEl = document.getElementById('groupChatName');
+  if (!groupNameEl) return null;
+  
+  const displayName = groupNameEl.textContent.replace('👥 ', '').trim();
+  
+  try {
+    // Find group by name that user is a member of
+    const groupsRef = collection(db, 'groups');
+    const q = query(
+      groupsRef,
+      where('members', 'array-contains', auth.currentUser.uid),
+      where('name', '==', displayName)
+    );
+    
+    const snapshot = await getDocs(q);
+    
+    if (!snapshot.empty) {
+      return snapshot.docs[0].id;
+    }
+  } catch (e) {
+    console.error('Error finding group:', e);
+  }
+  
+  return null;
+}
 
 // Show Group Members Modal
 window.showGroupMembers = async () => {
-  // Get current group from DOM data attribute
-  const groupChatView = document.getElementById('groupChatView');
-  const groupId = groupChatView.dataset.groupId;
-  
-  if (!groupId) {
-    console.error('No current group selected');
-    return;
-  }
-  
   const modal = document.getElementById('groupMembersModal');
   const membersList = document.getElementById('groupMembersList');
   
   modal.classList.remove('hidden');
   membersList.innerHTML = '<div class="spinner"></div>';
+  
+  // Get current group ID
+  const groupId = await getCurrentGroupId();
+  
+  if (!groupId) {
+    console.error('No current group selected');
+    membersList.innerHTML = '<div class="no-users">Gruppe nicht gefunden</div>';
+    return;
+  }
+  
+  console.log('✅ Found groupId:', groupId);
   
   try {
     // Load group data
