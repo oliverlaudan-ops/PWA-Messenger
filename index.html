@@ -99,7 +99,7 @@
         </div>
 
         <!-- Group Chat View -->
-        <div id="groupChatView" class="content hidden" data-group-id="">
+        <div id="groupChatView" class="content hidden">
           <div class="chat-header dm-chat-header">
             <button class="back-btn" onclick="closeGroupChat()">←</button>
             <div class="dm-chat-info">
@@ -213,8 +213,5 @@
   <!-- Load Firebase modules -->
   <script type="module" src="firebase.js"></script>
   <script type="module" src="firebase-members.js"></script>
-  
-  <!-- Patch script that waits for openGroupChat to be ready -->
-  <script src="firebase-patch-groupid.js"></script>
 </body>
 </html>
