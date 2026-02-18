@@ -9,16 +9,19 @@
 **Started**: February 13, 2026
 
 **Tech Stack**:
-- Frontend: HTML5, CSS3, Vanilla JavaScript
+- Frontend: HTML5, CSS3, Vanilla JavaScript (ES6 Modules)
 - Backend: Firebase (Auth, Firestore, Hosting)
+- Architecture: Modular (7 modules)
 - PWA: Service Worker, Manifest
 - Deployment: GitHub Actions → Firebase Hosting
 
 ---
 
-## ✅ Completed Features (Phase 0 + 1)
+## ✅ Completed Features
 
-### 🔐 Authentication & User Management
+### Phase 1: Basic Setup (Feb 13, 2026)
+
+#### 🔐 Authentication & User Management
 - [x] Email/Password Registration
 - [x] Email/Password Login
 - [x] Username System (unique, 3-20 chars, lowercase)
@@ -26,16 +29,25 @@
 - [x] Session Management (Firebase Auth State)
 - [x] Logout Functionality
 
-### 👥 Group Chat
+#### 👥 Group Chat (Global)
 - [x] Public Test Group
 - [x] Real-time Message Sync (Firestore `onSnapshot`)
 - [x] Message Display with Username
 - [x] Send Messages with Enter Key
 - [x] Auto-scroll to Latest Message
-- [x] **Bug Fix**: Prevented Message Duplication (using `docChanges()`)
 - [x] Message Limit: Last 50 Messages
 
-### 💬 Direct Messages (1-on-1)
+#### 🎨 UI/UX
+- [x] Modern Gradient Design (Purple/Blue)
+- [x] Responsive Layout (Mobile + Desktop)
+- [x] Loading Spinners
+- [x] Error Messages with Auto-hide
+
+---
+
+### Phase 2: Direct Messages (Feb 13, 2026)
+
+#### 💬 1-on-1 Messaging
 - [x] Tab Navigation (Groups / Direct Messages)
 - [x] User Search Modal
   - Search by @username or email
@@ -45,289 +57,273 @@
   - Separate chat window
   - Back button navigation
   - Real-time message sync
-- [x] **Chat ID System**: Sorted UIDs (`uid1_uid2`)
+- [x] Chat ID System: Sorted UIDs (`uid1_uid2`)
 - [x] Firestore Structure: `directMessages/{chatId}/messages/`
 - [x] Send/Receive DMs in Real-time
 
-### 🎨 UI/UX
-- [x] Modern Gradient Design (Purple/Blue)
-- [x] Responsive Layout (Mobile + Desktop)
-- [x] Tab Navigation with Active State
-- [x] Modal Overlays (User Search)
-- [x] Smooth Animations (Slide-in, Hover Effects)
-- [x] Loading Spinners
-- [x] Error Messages with Auto-hide
+#### 🔔 Unread Counter
+- [x] Roter Badge in Chat-Liste
+- [x] Badge verschwindet beim Öffnen
+- [x] Echtzeit-Updates
+- [x] Firestore: `unreadCount` pro User
 
-### 🛠️ Technical Optimizations
-- [x] User Cache (prevent redundant Firestore reads)
-- [x] Incremental Message Rendering (no full re-render)
-- [x] Data Attribute IDs (`data-msg-id`, `data-dm-msg-id`)
-- [x] Listener Cleanup on Logout
-- [x] GitHub Actions CI/CD Pipeline
-
----
-
-## 🚧 In Progress
-
-**Current Status**: Planning Phase 2
-
-**Next Up**: Timestamps + DM Overview
+#### 🕒 Timestamps
+- [x] Zeitstempel bei jeder Nachricht
+- [x] Format:
+  - Heute: "14:35"
+  - Gestern: "Gestern 14:35"
+  - Älter: "12.02.2026 14:35"
+- [x] DM Overview (Chat Liste)
+  - Letzte Nachricht Vorschau
+  - Sortierung nach Aktivität
 
 ---
 
-## 📈 Future Development Plan
+### Phase 3: Gruppen-Features (Feb 16-17, 2026)
 
-### **Phase 2: Core Messaging Features** (Estimated: 2-3h)
+#### 👥 Gruppen erstellen
+- [x] Modal zum Erstellen neuer Gruppen
+- [x] Gruppenname (3-50 Zeichen)
+- [x] Beschreibung (optional, max. 200 Zeichen)
+- [x] Creator wird automatisch Admin
+- [x] Validierung
 
-#### Session 2.1: Timestamps & Time Display
-- [ ] Add `createdAt` timestamp display to messages
-- [ ] Format timestamps:
-  - Today: "14:35"
-  - Yesterday: "Gestern 14:35"
-  - Older: "12.02.2026 14:35"
-- [ ] Show timestamps in both Group Chat and DMs
-- [ ] Add `.time` CSS class styling
+#### 📋 Gruppenliste
+- [x] Liste aller Gruppen des Users
+- [x] Letzte Nachricht Vorschau
+- [x] Zeitstempel
+- [x] Mitgliederzahl
+- [x] Sortierung nach Aktivität
+- [x] Unread Badge (roter Kreis)
+- [x] Empty State
 
-#### Session 2.2: DM Overview (Chat List)
-- [ ] Query all DM chats for current user
-- [ ] Load last message from each chat
-- [ ] Display chat list:
-  - Avatar (first letter)
-  - Username
-  - Last message preview (max 50 chars)
-  - Timestamp
-- [ ] Click opens DM chat
-- [ ] Sort by most recent activity
-- [ ] Replace placeholder in `dmListView`
+#### 💬 Gruppenchat
+- [x] Echtzeit-Gruppennachrichten
+- [x] Timestamps
+- [x] Auto-Scroll
+- [x] Limit: 50 neueste Nachrichten
+- [x] Group Header mit Mitgliederzahl
+- [x] "👥 Mitglieder" Button
+- [x] Zurück zur Gruppenliste
 
-#### Session 2.3: Unread Counter
-- [ ] Track unread messages per chat
-- [ ] Store `lastRead` timestamp per user/chat
-- [ ] Display unread badge on chat list
-- [ ] Display unread count on DM tab
-- [ ] Mark as read when chat is opened
-
-#### Session 2.4: Online Status
-- [ ] Update `users` collection with `lastSeen` timestamp
-- [ ] Display online indicator (green dot)
-- [ ] Show "Online" vs "Last seen X min ago"
-- [ ] Real-time status updates
-
-#### Session 2.5: Typing Indicator
-- [ ] Firestore field: `typing` (boolean + timestamp)
-- [ ] Show "@username is typing..." indicator
-- [ ] Auto-clear after 3 seconds of inactivity
-- [ ] Display in both groups and DMs
+#### 👥 Gruppenmitglieder anzeigen
+- [x] Modal mit Mitgliederliste
+- [x] Badges: 👑 Creator, ⚡ Admin
+- [x] Username und E-Mail
+- [x] Mitgliederzahl im Header
 
 ---
 
-### **Phase 3: Group Management** (Estimated: 3-4h)
+### Phase 4: Modular Architecture (Feb 18, 2026)
 
-#### Session 3.1: Create Groups
-- [ ] "Create Group" button
-- [ ] Group creation modal:
-  - Group name (required)
-  - Description (optional)
-  - Privacy (Public/Private)
-- [ ] Firestore `groups` collection:
-  ```
-  groups/
-    ├─ {groupId}/
-    │   ├─ name
-    │   ├─ description
-    │   ├─ createdBy (uid)
-    │   ├─ createdAt
-    │   ├─ privacy (public/private)
-    │   ├─ members/ (map: uid → role)
-    │   └─ messages/
-  ```
-- [ ] Creator becomes Admin
+#### ♻️ Refactoring
+- [x] firebase.js (35KB) → 7 Module
+- [x] `modules/state.js` - Firebase init & shared state
+- [x] `modules/ui.js` - UI helpers & formatting
+- [x] `modules/users.js` - User search & caching
+- [x] `modules/auth.js` - Authentication
+- [x] `modules/groups.js` - Group functionality
+- [x] `modules/directMessages.js` - DM functionality
+- [x] `modules/groupMembers.js` - Member management
+- [x] `app.js` - Main entry point
 
-#### Session 3.2: Group List & Join
-- [ ] Display user's groups in Groups tab
-- [ ] Browse public groups
-- [ ] Join/Leave groups
-- [ ] Group-specific message loading
-
-#### Session 3.3: Invite Members
-- [ ] "Add Members" button in group
-- [ ] User search modal (reuse existing)
-- [ ] Send invitations
-- [ ] Accept/Decline invitations
-
-#### Session 3.4: Admin System
-- [ ] Member roles: `admin`, `member`
-- [ ] Admin actions:
-  - Remove members
-  - Promote to admin
-  - Edit group info
-  - Delete group
-- [ ] Permission checks
+#### ✅ Vorteile
+- [x] Übersichtlicher Code
+- [x] Leichter wartbar
+- [x] Einfach erweiterbar
+- [x] Wiederverwendbare Module
+- [x] Einzeln testbar
 
 ---
 
-### **Phase 4: Rich Media & Interactions** (Estimated: 4-5h)
+### Phase 5: Gruppenmitgliederverwaltung (Feb 18, 2026)
 
-#### Session 4.1: Emoji Picker
-- [ ] Integrate emoji picker library (e.g., `emoji-picker-element`)
-- [ ] Emoji button next to message input
-- [ ] Insert emoji at cursor position
+#### 🔐 Permission-System
+- [x] 3 Rollen: Creator (👑), Admin (⚡), Member (👤)
+- [x] Rollenbasierte Berechtigungen
+- [x] Permission-Checker-Funktionen
 
-#### Session 4.2: Image Upload
-- [ ] File input for images
-- [ ] Upload to Firebase Storage
-- [ ] Display images in chat
-- [ ] Image preview before sending
-- [ ] Thumbnail generation
+#### 👑 Creator-Rechte
+- [x] Admins ernennen/entziehen
+- [x] Mitglieder hinzufügen/entfernen
+- [x] Gruppe umbenennen
+- [x] Beschreibung ändern
+- [x] Gruppe löschen (Doppelbestätigung)
+- [x] Kann nicht entfernt werden
 
-#### Session 4.3: Message Reactions
-- [ ] React to messages with emojis
-- [ ] Firestore: `reactions` subcollection
-- [ ] Display reaction count
-- [ ] Click to add/remove reaction
+#### ⚡ Admin-Rechte
+- [x] Admins ernennen
+- [x] Eigenen Admin-Status entfernen
+- [x] Mitglieder hinzufügen/entfernen
+- [x] Gruppe umbenennen/beschreiben
 
-#### Session 4.4: Message Actions
-- [ ] Long-press / right-click menu
-- [ ] Edit message (owner only)
-- [ ] Delete message (owner + admin)
-- [ ] Copy message text
-- [ ] Reply to message (threading)
+#### 👤 Member-Rechte
+- [x] Gruppe verlassen
+- [x] Nachrichten lesen/schreiben
 
----
-
-### **Phase 5: Utility Bots (No External APIs)** (Estimated: 3-4h)
-
-#### Session 5.1: Bot Framework
-- [ ] Command parser (detect `/command`)
-- [ ] Bot registry (list of available bots)
-- [ ] Bot response system
-- [ ] Firebase Cloud Functions setup
-- [ ] Bot user accounts (special UIDs)
-
-#### Session 5.2: Reminder Bot ⏰
-- [ ] Command: `/remind [time] [message]`
-- [ ] Parse time expressions:
-  - "in 10 minutes"
-  - "at 15:30"
-  - "tomorrow at 9am"
-- [ ] Store reminder in Firestore `reminders` collection
-- [ ] Scheduled Cloud Function to send reminder
-- [ ] Cancel reminder: `/cancel_reminder [id]`
-
-#### Session 5.3: Poll Bot 📊
-- [ ] Command: `/poll [question] | [option1] | [option2] ...`
-- [ ] Create interactive poll message
-- [ ] Vote buttons (Firestore transactions)
-- [ ] Display vote count
-- [ ] Close poll: `/close_poll`
-
-#### Session 5.4: Welcome Bot 👋
-- [ ] Automatic greeting for new group members
-- [ ] Customizable welcome message
-- [ ] Show group rules/info
-
-#### Session 5.5: Fun Bots 🎲
-- [ ] `/roll [sides]` - Dice roller (default d6)
-- [ ] `/coinflip` - Heads or tails
-- [ ] `/8ball [question]` - Magic 8-ball
-- [ ] `/joke` - Random joke
+#### 📱 UI Features
+- [x] Members Modal mit Action-Buttons
+- [x] "➕ Mitglied hinzufügen" Button
+- [x] "⚙️ Gruppeneinstellungen" Button
+- [x] Admin Toggle Button
+- [x] Entfernen/Verlassen Buttons
+- [x] Group Settings Modal (dynamisch)
+- [x] Add Member Modal
 
 ---
 
-### **Phase 6: AI Integration with Perplexity API** 🧠 (Estimated: 3-4h)
+## 🔥 Phase 6: Advanced Features (Next Up)
 
-**Prerequisites**:
-- Perplexity Pro Account (already available)
-- API Key from https://www.perplexity.ai/settings/api
-- $5/month free credits included
+### Priorität 1: Push-Benachrichtigungen 🔔
 
-#### Session 6.1: API Setup
-- [ ] Generate Perplexity API Key
-- [ ] Store API Key in Firebase Environment Variables
-- [ ] Test API connection
-- [ ] Create Firebase Cloud Function wrapper
+#### Session 6.1: FCM Setup
+- [ ] Firebase Cloud Messaging aktivieren
+- [ ] Service Worker für Push erweitern
+- [ ] Notification Permission Request
+- [ ] Token-Verwaltung in Firestore
+- [ ] Test-Benachrichtigung senden
 
-#### Session 6.2: Sonar Chat Bot 🤖
-- [ ] Command: `/ask [question]`
-- [ ] Call Perplexity Sonar API
-- [ ] Display response with citations
-- [ ] Conversation context (last N messages)
-- [ ] Token/cost tracking
+#### Session 6.2: Message Notifications
+- [ ] Benachrichtigung bei neuer DM
+- [ ] Benachrichtigung bei neuer Gruppennachricht
+- [ ] Benachrichtigung bei Erwähnung (@username)
+- [ ] Badge-Counter auf App-Icon
+- [ ] Sound-Benachrichtigungen (optional)
 
-#### Session 6.3: Summary Bot 📝
-- [ ] Command: `/summary [count]`
-- [ ] Fetch last N messages from chat
-- [ ] Send to Perplexity API for summarization
-- [ ] Display concise summary
-- [ ] Optional: Daily auto-summaries
-
-#### Session 6.4: Translate Bot 🌍
-- [ ] Command: `/translate [lang] [text]`
-- [ ] Auto-detect source language
-- [ ] Translate using Perplexity API
-- [ ] Support common languages (EN, DE, ES, FR, etc.)
-
-#### Session 6.5: Image Generation Bot 🎨 (Future)
-- [ ] Requires DALL-E or Stable Diffusion API
-- [ ] Command: `/imagine [prompt]`
-- [ ] Generate image
-- [ ] Upload to Firebase Storage
-- [ ] Display in chat
+#### Session 6.3: Notification Settings
+- [ ] Benachrichtigungen pro Chat ein/ausschalten
+- [ ] "Stumm schalten" für X Stunden
+- [ ] "Nicht stören" Modus
+- [ ] Einstellungen in User-Profil
 
 ---
 
-### **Phase 7: PWA & Notifications** (Estimated: 2-3h)
+### Priorität 2: Medien-Upload 📎
 
-#### Session 7.1: Push Notifications
-- [ ] Request notification permission
-- [ ] Firebase Cloud Messaging (FCM) setup
-- [ ] Send notifications for:
-  - New DMs
-  - Group mentions
-  - Reminders
-- [ ] Notification settings per chat
+#### Session 6.4: Firebase Storage Setup
+- [ ] Firebase Storage aktivieren
+- [ ] Storage Rules konfigurieren
+- [ ] Upload-Funktion erstellen
+- [ ] Progress Bar
 
-#### Session 7.2: Offline Mode
-- [ ] Service Worker caching strategy
-- [ ] Queue messages when offline
-- [ ] Sync when back online
-- [ ] Show offline indicator
+#### Session 6.5: Bilder senden
+- [ ] Bild-Upload Button
+- [ ] Dateiauswahl (File Input)
+- [ ] Vorschau vor Senden
+- [ ] Upload zu Storage
+- [ ] URL in Nachricht speichern
+- [ ] Bildanzeige im Chat
+- [ ] Thumbnail-Generierung
+- [ ] Lightbox zum Vergrößern
 
-#### Session 7.3: Install Prompt
-- [ ] Detect if app is installable
-- [ ] Show "Add to Home Screen" prompt
-- [ ] Custom install UI
-- [ ] Track install analytics
+#### Session 6.6: Dateien teilen
+- [ ] Datei-Upload (PDF, DOCX, etc.)
+- [ ] Icon nach Dateityp
+- [ ] Download-Button
+- [ ] Dateigröße-Limit (z.B. 10MB)
+- [ ] Fortschrittsanzeige
 
 ---
 
-### **Phase 8: Advanced Features** (Future)
+### Priorität 3: Nachricht-Suche 🔍
 
-#### User Profile
-- [ ] Profile picture upload
-- [ ] Bio/Status text
-- [ ] Edit profile modal
-- [ ] View other user profiles
+#### Session 6.7: Suche innerhalb Chat
+- [ ] Suchfeld im Chat-Header
+- [ ] Volltextsuche durch Nachrichten
+- [ ] Hervorhebung der Ergebnisse
+- [ ] Navigation zwischen Treffern
+- [ ] Filter nach Datum
 
-#### Voice Messages
-- [ ] Record audio
-- [ ] Upload to Firebase Storage
-- [ ] Audio player in chat
+#### Session 6.8: Globale Suche
+- [ ] Suche über alle Chats
+- [ ] Ergebnis-Liste mit Chat-Name
+- [ ] Klick springt zur Nachricht
+- [ ] Firestore Composite Index
 
-#### Video Calls (Stretch Goal)
-- [ ] WebRTC integration
-- [ ] 1-on-1 video calls
-- [ ] Screen sharing
+---
 
-#### Search
-- [ ] Search messages in chat
-- [ ] Search across all chats
-- [ ] Filter by date/user
+### Priorität 4: Typing Indicator ✍️
 
-#### Analytics
-- [ ] User activity tracking
-- [ ] Message statistics
-- [ ] Bot usage metrics
+#### Session 6.9: "... schreibt" Anzeige
+- [ ] Firestore: `typing/{chatId}` Collection
+- [ ] Beim Tippen: Timeout 3 Sekunden
+- [ ] Anzeige "@username schreibt..."
+- [ ] Echtzeit-Updates via Snapshot
+- [ ] Cleanup bei Verlassen
+- [ ] Für DMs und Gruppen
+
+---
+
+### Priorität 5: Lesebesttäigungen ✓✓
+
+#### Session 6.10: Read Receipts
+- [ ] Firestore: `readBy` Array in Nachrichten
+- [ ] Beim Öffnen: Update readBy
+- [ ] Doppelhaken-Icon wie WhatsApp
+- [ ] "Gelesen von X Personen" (Gruppen)
+- [ ] Einstellung: Lesebesttätigungen deaktivieren
+
+---
+
+### Priorität 6: Emoji-Reaktionen 😊
+
+#### Session 6.11: Message Reactions
+- [ ] Reaktions-Button bei Nachricht
+- [ ] Emoji-Picker (z.B. emoji-picker-element)
+- [ ] Firestore: `reactions/{messageId}`
+- [ ] Anzeige unter Nachricht
+- [ ] Counter pro Emoji
+- [ ] Toggle eigene Reaktion
+- [ ] Max. 5 verschiedene Emojis
+
+---
+
+## 🚀 Phase 7: Utility Bots (Future)
+
+### Session 7.1: Bot Framework
+- [ ] Command Parser (`/command`)
+- [ ] Bot Registry
+- [ ] Firebase Cloud Functions Setup
+- [ ] Bot User Accounts
+
+### Session 7.2: Reminder Bot ⏰
+- [ ] `/remind [time] [message]`
+- [ ] Time Parser ("in 10 min", "at 15:30")
+- [ ] Scheduled Cloud Function
+- [ ] Cancel Command
+
+### Session 7.3: Poll Bot 📊
+- [ ] `/poll [question] | [option1] | [option2]`
+- [ ] Vote Buttons
+- [ ] Live Vote Count
+- [ ] Close Poll
+
+### Session 7.4: Fun Bots 🎲
+- [ ] `/roll [sides]` - Dice Roller
+- [ ] `/coinflip` - Heads or Tails
+- [ ] `/8ball` - Magic 8-ball
+
+---
+
+## 🧠 Phase 8: AI Integration (Future)
+
+### Session 8.1: Perplexity API Setup
+- [ ] API Key Setup
+- [ ] Environment Variables
+- [ ] Cloud Function Wrapper
+
+### Session 8.2: Sonar Chat Bot 🤖
+- [ ] `/ask [question]`
+- [ ] Conversation Context
+- [ ] Citations anzeigen
+
+### Session 8.3: Summary Bot 📝
+- [ ] `/summary [count]`
+- [ ] Zusammenfassung der letzten N Nachrichten
+
+### Session 8.4: Translate Bot 🌍
+- [ ] `/translate [lang] [text]`
+- [ ] Auto-Detect Source Language
 
 ---
 
@@ -335,151 +331,115 @@
 
 ### Milestones
 
-- [x] **Milestone 1**: Basic Messenger (Auth + Group Chat) → Feb 13, 2026
+- [x] **Milestone 1**: Basic Messenger → Feb 13, 2026
 - [x] **Milestone 2**: Direct Messages → Feb 13, 2026
-- [ ] **Milestone 3**: Core Features (Timestamps, DM Overview, Status)
-- [ ] **Milestone 4**: Group Management
-- [ ] **Milestone 5**: Utility Bots
-- [ ] **Milestone 6**: AI Integration
-- [ ] **Milestone 7**: PWA Features
-- [ ] **Milestone 8**: v1.0 Production Release
+- [x] **Milestone 3**: Gruppen-Features → Feb 17, 2026
+- [x] **Milestone 4**: Modular Architecture → Feb 18, 2026
+- [x] **Milestone 5**: Member Management → Feb 18, 2026
+- [ ] **Milestone 6**: Advanced Features (Notifications, Media, etc.)
+- [ ] **Milestone 7**: Utility Bots
+- [ ] **Milestone 8**: AI Integration
+- [ ] **Milestone 9**: v1.0 Production Release
 
 ### Time Estimates
 
 | Phase | Estimated Time | Status |
 |-------|----------------|--------|
-| Phase 0-1 (Completed) | ~4-5h | ✅ Done |
-| Phase 2 (Core Features) | 2-3h | 🕐 Next |
-| Phase 3 (Groups) | 3-4h | ⏳ Planned |
-| Phase 4 (Rich Media) | 4-5h | ⏳ Planned |
-| Phase 5 (Bots) | 3-4h | ⏳ Planned |
-| Phase 6 (AI) | 3-4h | ⏳ Planned |
-| Phase 7 (PWA) | 2-3h | ⏳ Planned |
-| **Total Remaining** | **~17-23h** | - |
+| Phase 1-2 (Basic + DM) | ~5h | ✅ Done |
+| Phase 3 (Groups) | ~4h | ✅ Done |
+| Phase 4 (Modular) | ~2h | ✅ Done |
+| Phase 5 (Permissions) | ~3h | ✅ Done |
+| Phase 6 (Advanced) | ~12-15h | 🔥 Next |
+| Phase 7 (Bots) | ~6-8h | ⏳ Planned |
+| Phase 8 (AI) | ~4-5h | ⏳ Planned |
+| **Total Remaining** | **~22-28h** | - |
 
 ---
 
-## 📝 Development Notes
-
-### Current File Structure
+## 🗄️ Current File Structure
 
 ```
 PWA-Messenger/
-├── index.html          # Main HTML with all screens
-├── styles.css          # Complete CSS styling
-├── firebase.js         # Firebase logic + all features
-├── manifest.json       # PWA manifest
-├── sw.js               # Service Worker
-├── .github/
-│   └── workflows/
-│       └── firebase-hosting-merge.yml  # Auto-deploy
-└── ROADMAP.md          # This file
+├── index.html
+├── styles.css
+├── app.js              # Main entry point
+├── modules/
+│   ├── state.js        # Firebase & state
+│   ├── ui.js           # UI helpers
+│   ├── users.js        # User management
+│   ├── auth.js         # Authentication
+│   ├── groups.js       # Group features
+│   ├── directMessages.js  # DMs
+│   └── groupMembers.js    # Member management
+├── manifest.json
+├── sw.js
+├── ROADMAP.md
+├── CHANGELOG.md
+└── .github/workflows/
 ```
 
-### Firestore Collections
+---
+
+## 📝 Firestore Structure
 
 ```
 Firestore/
 ├── users/
 │   └── {uid}/
-│       ├── username (string)
-│       ├── email (string)
-│       └── createdAt (timestamp)
-├── messages/               # Public test group
-│   └── {messageId}/
-│       ├── text (string)
-│       ├── uid (string)
-│       ├── username (string)
-│       └── createdAt (timestamp)
-└── directMessages/
-    └── {chatId}/            # Format: uid1_uid2 (sorted)
+│       ├── username
+│       ├── email
+│       └── createdAt
+├── chats/  (DM Metadata)
+│   └── {chatId}/  (uid1_uid2)
+│       ├── participants: [uid1, uid2]
+│       ├── lastMessage
+│       ├── lastMessageTime
+│       └── unreadCount: {uid1: 0, uid2: 3}
+├── directMessages/
+│   └── {chatId}/
+│       └── messages/
+│           └── {messageId}/
+│               ├── text
+│               ├── uid
+│               ├── username
+│               └── createdAt
+├── groups/  (Group Metadata)
+│   └── {groupId}/
+│       ├── name
+│       ├── description
+│       ├── createdBy (Creator UID)
+│       ├── members: [uid1, uid2, ...]
+│       ├── admins: [uid1, ...]
+│       ├── createdAt
+│       ├── lastMessage
+│       ├── lastMessageTime
+│       └── unreadCount: {uid1: 2, uid2: 0, ...}
+└── groupMessages/
+    └── {groupId}/
         └── messages/
             └── {messageId}/
-                ├── text (string)
-                ├── uid (string)
-                ├── username (string)
-                └── createdAt (timestamp)
-```
-
-### Key Functions Reference
-
-**Authentication**:
-- `signup()` - Register new user
-- `login()` - Sign in user
-- `logout()` - Sign out user
-- `setUsername()` - Create username profile
-
-**Messaging**:
-- `sendMessage()` - Send group message
-- `sendDMMessage()` - Send direct message
-- `loadMessages()` - Load group messages
-- `loadDMMessages(otherUserId)` - Load DM messages
-
-**Navigation**:
-- `switchTab(tabName)` - Switch between Groups/DMs
-- `showUserSearch()` - Open user search modal
-- `startDirectMessage(user)` - Open DM chat
-- `closeDMChat()` - Close DM and return to list
-
-**Utilities**:
-- `createChatId(uid1, uid2)` - Generate sorted chat ID
-- `loadUserData(uid)` - Get user profile (cached)
-- `appendMessage(docSnap)` - Render single message
-- `appendDMMessage(docSnap)` - Render single DM message
-
----
-
-## 🛠️ Setup Instructions (For Future Reference)
-
-### Prerequisites
-- Node.js (for Firebase CLI)
-- Firebase Project
-- GitHub Account
-
-### Firebase Setup
-1. Create Firebase project
-2. Enable Authentication (Email/Password)
-3. Create Firestore database
-4. Add web app to Firebase project
-5. Copy config to `firebase.js`
-
-### GitHub Actions Setup
-1. Generate Firebase token: `firebase login:ci`
-2. Add token to GitHub Secrets as `FIREBASE_TOKEN`
-3. Push triggers auto-deploy
-
-### Local Development
-```bash
-# Clone repository
-git clone https://github.com/oliverlaudan-ops/PWA-Messenger.git
-cd PWA-Messenger
-
-# Install Firebase CLI
-npm install -g firebase-tools
-
-# Login to Firebase
-firebase login
-
-# Serve locally
-firebase serve
+                ├── text
+                ├── uid
+                ├── username
+                └── createdAt
 ```
 
 ---
 
-## 📞 Contact & Resources
+## 📧 Contact & Resources
 
 **Live App**: https://messenger.future-pulse.tech
 
 **GitHub**: https://github.com/oliverlaudan-ops/PWA-Messenger
 
-**Firebase Console**: [Your Firebase Project URL]
-
-**Perplexity API Docs**: https://docs.perplexity.ai/
-
-**Next Session**: Phase 2.1 - Timestamps
+**Next Session**: Phase 6.1 - Push Notifications Setup
 
 ---
 
-**Last Updated**: February 13, 2026, 14:58 CET
+**Last Updated**: February 18, 2026, 09:26 CET
 
-**Version**: 0.2.0
+**Version**: 0.5.0
+
+**Contributors**:
+- Oliver Laudan (@oliverlaudan-ops) - Main Developer
+- Perplexity AI - Development Assistant
