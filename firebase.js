@@ -1,9 +1,21 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDoc, where, getDocs, limit, collectionGroup, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
-import { firebaseConfig } from './firebase.config.js';
 
-// Initialize Firebase with config from separate file
+// Firebase configuration
+// Note: Firebase Web API keys are designed to be public
+// Security is enforced through Firestore Rules and API restrictions in Google Cloud Console
+const firebaseConfig = {
+  apiKey: "AIzaSyDd04hw7kkLI0-vJWjXhpVwRlp-WBMYuV8",
+  authDomain: "pwa-messenger-oliver.firebaseapp.com",
+  projectId: "pwa-messenger-oliver",
+  storageBucket: "pwa-messenger-oliver.firebasestorage.app",
+  messagingSenderId: "171952836516",
+  appId: "1:171952836516:web:427a7829345cde6ed8fb31",
+  measurementId: "G-0w21RL0G06"
+};
+
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
