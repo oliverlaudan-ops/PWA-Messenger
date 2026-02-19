@@ -1,20 +1,6 @@
 /**
  * Firebase Cloud Functions for PWA Messenger
- * 
- * DEPLOYMENT INSTRUCTIONS:
- * 1. Install Firebase CLI: npm install -g firebase-tools
- * 2. Login: firebase login
- * 3. Initialize functions: firebase init functions
- * 4. Deploy: firebase deploy --only functions
- * 
- * SETUP:
- * cd functions
- * npm install
- * 
- * This file contains:
- * - Push notification triggers for new messages
- * - FCM token management
- * - Badge count calculations
+ * Updated to use FCM v1 API
  */
 
 const functions = require('firebase-functions');
@@ -34,12 +20,12 @@ exports.onNewGroupMessage = functions.firestore
       const messageData = snap.data();
       const { text, uid: senderId, username } = messageData;
 
-      console.log(`New group message in ${groupId} from ${username}`);
+      console.log(`📬 New group message in ${groupId} from ${username}`);
 
       // Get group data
       const groupDoc = await db.collection('groups').doc(groupId).get();
       if (!groupDoc.exists) {
-        console.log('Group not found');
+        console.log('❌ Group not found');
         return null;
       }
 
@@ -50,7 +36,7 @@ exports.onNewGroupMessage = functions.firestore
       const recipientIds = members.filter(memberId => memberId !== senderId);
 
       if (recipientIds.length === 0) {
-        console.log('No recipients for notification');
+        console.log('ℹ️ No recipients for notification');
         return null;
       }
 
@@ -63,6 +49,7 @@ exports.onNewGroupMessage = functions.firestore
           
           // Check if user has notifications enabled
           if (userData.notificationsEnabled === false) {
+            console.log(`🔕 Notifications disabled for user ${recipientId}`);
             continue;
           }
 
@@ -78,6 +65,7 @@ exports.onNewGroupMessage = functions.firestore
           if (settings.chatMuted && settings.chatMuted[groupId]) {
             const muteUntil = settings.chatMuted[groupId];
             if (Date.now() < muteUntil) {
+              console.log(`🔇 Group ${groupId} muted for user ${recipientId}`);
               continue;
             }
           }
@@ -85,6 +73,7 @@ exports.onNewGroupMessage = functions.firestore
           // Skip if Do Not Disturb is active
           if (settings.doNotDisturb) {
             if (!settings.doNotDisturbUntil || Date.now() < settings.doNotDisturbUntil) {
+              console.log(`🌙 DND active for user ${recipientId}`);
               continue;
             }
           }
@@ -103,17 +92,17 @@ exports.onNewGroupMessage = functions.firestore
       }
 
       if (tokens.length === 0) {
-        console.log('No valid FCM tokens found');
+        console.log('⚠️ No valid FCM tokens found');
         return null;
       }
 
-      console.log(`Sending notifications to ${tokens.length} devices`);
+      console.log(`📤 Sending notifications to ${tokens.length} devices`);
 
       // Prepare notification payload
       const notificationTitle = `👥 ${groupName}`;
       const notificationBody = `${username}: ${text.length > 100 ? text.substring(0, 100) + '...' : text}`;
 
-      // Send notifications
+      // Send notifications using FCM v1 API
       const messages = tokens.map(({ token, userId, unreadCount }) => ({
         token,
         notification: {
@@ -132,32 +121,49 @@ exports.onNewGroupMessage = functions.firestore
         webpush: {
           fcmOptions: {
             link: `https://messenger.future-pulse.tech/?openChat=${groupId}&type=group`
+          },
+          notification: {
+            icon: '/icon-192x192.png',
+            badge: '/icon-96x96.png',
+            vibrate: [200, 100, 200],
+            requireInteraction: false
           }
         }
       }));
 
-      const results = await admin.messaging().sendAll(messages);
+      // Send all messages
+      const results = await admin.messaging().sendEach(messages);
       
-      console.log(`Successfully sent ${results.successCount} notifications`);
+      console.log(`✅ Successfully sent ${results.successCount} notifications`);
+      
       if (results.failureCount > 0) {
-        console.log(`Failed to send ${results.failureCount} notifications`);
+        console.log(`❌ Failed to send ${results.failureCount} notifications`);
         
         // Clean up invalid tokens
         results.responses.forEach((result, index) => {
           if (!result.success) {
             const { token, userId } = tokens[index];
-            console.log(`Removing invalid token for user ${userId}`);
-            // Remove invalid token
-            db.collection('users').doc(userId).update({
-              [`fcmTokens.${token}`]: admin.firestore.FieldValue.delete()
-            });
+            const errorCode = result.error?.code;
+            
+            console.log(`⚠️ Error for user ${userId}: ${errorCode}`);
+            
+            // Remove invalid tokens
+            if (errorCode === 'messaging/invalid-registration-token' ||
+                errorCode === 'messaging/registration-token-not-registered') {
+              console.log(`🗑️ Removing invalid token for user ${userId}`);
+              db.collection('users').doc(userId).update({
+                [`fcmTokens.${token}`]: admin.firestore.FieldValue.delete()
+              }).catch(err => console.error('Error removing token:', err));
+            }
           }
         });
       }
 
       return null;
     } catch (error) {
-      console.error('Error sending group message notification:', error);
+      console.error('❌ Error sending group message notification:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       return null;
     }
   });
@@ -173,7 +179,7 @@ exports.onNewDirectMessage = functions.firestore
       const messageData = snap.data();
       const { text, uid: senderId, username } = messageData;
 
-      console.log(`New DM in ${chatId} from ${username}`);
+      console.log(`📬 New DM in ${chatId} from ${username}`);
 
       // Extract recipient ID from chatId (format: userId1_userId2)
       const [user1, user2] = chatId.split('_');
@@ -182,7 +188,7 @@ exports.onNewDirectMessage = functions.firestore
       // Get recipient's user data
       const recipientDoc = await db.collection('users').doc(recipientId).get();
       if (!recipientDoc.exists) {
-        console.log('Recipient not found');
+        console.log('❌ Recipient not found');
         return null;
       }
 
@@ -190,7 +196,7 @@ exports.onNewDirectMessage = functions.firestore
 
       // Check if notifications are enabled
       if (recipientData.notificationsEnabled === false) {
-        console.log('Notifications disabled for recipient');
+        console.log('🔕 Notifications disabled for recipient');
         return null;
       }
 
@@ -205,7 +211,7 @@ exports.onNewDirectMessage = functions.firestore
       if (settings.chatMuted && settings.chatMuted[chatId]) {
         const muteUntil = settings.chatMuted[chatId];
         if (Date.now() < muteUntil) {
-          console.log('Chat is muted');
+          console.log('🔇 Chat is muted');
           return null;
         }
       }
@@ -213,14 +219,14 @@ exports.onNewDirectMessage = functions.firestore
       // Check Do Not Disturb
       if (settings.doNotDisturb) {
         if (!settings.doNotDisturbUntil || Date.now() < settings.doNotDisturbUntil) {
-          console.log('Do Not Disturb is active');
+          console.log('🌙 Do Not Disturb is active');
           return null;
         }
       }
 
       // Get FCM tokens
       if (!recipientData.fcmTokens) {
-        console.log('No FCM tokens for recipient');
+        console.log('⚠️ No FCM tokens for recipient');
         return null;
       }
 
@@ -253,31 +259,47 @@ exports.onNewDirectMessage = functions.firestore
         webpush: {
           fcmOptions: {
             link: `https://messenger.future-pulse.tech/?openChat=${chatId}&type=dm`
+          },
+          notification: {
+            icon: '/icon-192x192.png',
+            badge: '/icon-96x96.png',
+            vibrate: [200, 100, 200],
+            requireInteraction: false
           }
         }
       }));
 
-      const results = await admin.messaging().sendAll(messages);
+      const results = await admin.messaging().sendEach(messages);
       
-      console.log(`Successfully sent ${results.successCount} notifications`);
+      console.log(`✅ Successfully sent ${results.successCount} notifications`);
+      
       if (results.failureCount > 0) {
-        console.log(`Failed to send ${results.failureCount} notifications`);
+        console.log(`❌ Failed to send ${results.failureCount} notifications`);
         
         // Clean up invalid tokens
         results.responses.forEach((result, index) => {
           if (!result.success) {
             const token = tokens[index];
-            console.log(`Removing invalid token`);
-            db.collection('users').doc(recipientId).update({
-              [`fcmTokens.${token}`]: admin.firestore.FieldValue.delete()
-            });
+            const errorCode = result.error?.code;
+            
+            console.log(`⚠️ Error: ${errorCode}`);
+            
+            if (errorCode === 'messaging/invalid-registration-token' ||
+                errorCode === 'messaging/registration-token-not-registered') {
+              console.log(`🗑️ Removing invalid token`);
+              db.collection('users').doc(recipientId).update({
+                [`fcmTokens.${token}`]: admin.firestore.FieldValue.delete()
+              }).catch(err => console.error('Error removing token:', err));
+            }
           }
         });
       }
 
       return null;
     } catch (error) {
-      console.error('Error sending DM notification:', error);
+      console.error('❌ Error sending DM notification:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       return null;
     }
   });
@@ -288,7 +310,7 @@ exports.onNewDirectMessage = functions.firestore
 exports.cleanupOldTokens = functions.pubsub
   .schedule('every 24 hours')
   .onRun(async (context) => {
-    console.log('Cleaning up old FCM tokens...');
+    console.log('🧹 Cleaning up old FCM tokens...');
     
     const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
     
@@ -316,6 +338,6 @@ exports.cleanupOldTokens = functions.pubsub
       }
     }
     
-    console.log(`Removed ${tokensRemoved} old FCM tokens`);
+    console.log(`✅ Removed ${tokensRemoved} old FCM tokens`);
     return null;
   });
