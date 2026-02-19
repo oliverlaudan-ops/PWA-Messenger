@@ -7,6 +7,8 @@ import { auth, db } from './state.js';
 
 let messaging = null;
 let currentFCMToken = null;
+let foregroundListenerUnsubscribe = null; // ← stores onMessage unsubscribe handle
+
 let notificationSettings = {
   enabled: true,
   sound: true,
@@ -73,27 +75,27 @@ export async function initNotifications() {
 export async function requestNotificationPermission() {
   try {
     console.log('📥 Requesting notification permission...');
-    
+
     if (!messaging) {
       messaging = getMessaging();
     }
 
     const permission = await Notification.requestPermission();
-    
+
     if (permission === 'granted') {
       console.log('✅ Notification permission granted');
       await registerFCMToken();
       setupForegroundListener();
-      
+
       // Update UI
       updateNotificationUI(true);
-      
+
       // Show success notification
       new Notification('🎉 Benachrichtigungen aktiviert!', {
         body: 'Du erhältst jetzt Benachrichtigungen bei neuen Nachrichten',
         icon: '/icon-192x192.png'
       });
-      
+
       return true;
     } else {
       console.log('❌ Notification permission denied');
@@ -119,7 +121,7 @@ async function registerFCMToken() {
     // Register Firebase Messaging service worker
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     console.log('📧 Firebase Messaging SW registered');
-    
+
     // Wait for service worker to be ready
     await navigator.serviceWorker.ready;
 
@@ -149,7 +151,7 @@ async function registerFCMToken() {
 async function saveFCMTokenToFirestore(token) {
   try {
     const userRef = doc(db, 'users', auth.currentUser.uid);
-    
+
     await updateDoc(userRef, {
       fcmTokens: {
         [token]: {
@@ -168,26 +170,39 @@ async function saveFCMTokenToFirestore(token) {
 }
 
 /**
- * Setup listener for foreground notifications
+ * Setup listener for foreground notifications.
+ * Tears down any existing listener first to prevent duplicates.
  */
 function setupForegroundListener() {
-  onMessage(messaging, (payload) => {
+  // Clean up previous listener if it exists
+  if (foregroundListenerUnsubscribe) {
+    foregroundListenerUnsubscribe();
+    foregroundListenerUnsubscribe = null;
+  }
+
+  foregroundListenerUnsubscribe = onMessage(messaging, (payload) => {
     console.log('📬 Foreground message received:', payload);
 
-    // Check if notifications are muted
+    // Check if notification should be shown
     if (!shouldShowNotification(payload)) {
       console.log('🔇 Notification muted by settings');
       return;
     }
 
-    // Display notification
+    // Display system notification
     displayNotification(payload);
-
-    // Play sound if enabled
-    if (notificationSettings.sound) {
-      playNotificationSound();
-    }
   });
+}
+
+/**
+ * Tear down the foreground listener (call on logout / cleanup).
+ */
+export function teardownForegroundListener() {
+  if (foregroundListenerUnsubscribe) {
+    foregroundListenerUnsubscribe();
+    foregroundListenerUnsubscribe = null;
+    console.log('🔕 Foreground notification listener removed');
+  }
 }
 
 /**
@@ -220,7 +235,7 @@ function shouldShowNotification(payload) {
   if (chatId && notificationSettings.chatMuted[chatId]) {
     const muteUntil = notificationSettings.chatMuted[chatId];
     const now = Date.now();
-    
+
     if (now < muteUntil) {
       return false;
     } else {
@@ -234,11 +249,11 @@ function shouldShowNotification(payload) {
 }
 
 /**
- * Display notification in foreground
+ * Display notification in foreground using the system Notification API
  */
 function displayNotification(payload) {
   const { notification, data } = payload;
-  
+
   const notificationOptions = {
     body: notification.body,
     icon: '/icon-192x192.png',
@@ -249,24 +264,7 @@ function displayNotification(payload) {
     vibrate: [200, 100, 200]
   };
 
-  if (data?.unreadCount) {
-    notificationOptions.badge = data.unreadCount;
-  }
-
   new Notification(notification.title, notificationOptions);
-}
-
-/**
- * Play notification sound
- */
-function playNotificationSound() {
-  try {
-    const audio = new Audio('/notification.mp3');
-    audio.volume = 0.5;
-    audio.play().catch(e => console.log('Could not play sound:', e));
-  } catch (error) {
-    console.log('Notification sound not available');
-  }
 }
 
 /**
@@ -281,7 +279,7 @@ async function loadNotificationSettings() {
 
     if (userDoc.exists()) {
       const data = userDoc.data();
-      
+
       if (data.notificationSettings) {
         notificationSettings = {
           ...notificationSettings,
@@ -322,7 +320,7 @@ export async function toggleNotifications(enabled) {
 }
 
 /**
- * Toggle notification sound
+ * Toggle notification sound (kept for settings compatibility; no audio is played)
  */
 export async function toggleNotificationSound(enabled) {
   notificationSettings.sound = enabled;
@@ -336,7 +334,7 @@ export async function muteChat(chatId, duration) {
   const muteUntil = Date.now() + duration;
   notificationSettings.chatMuted[chatId] = muteUntil;
   await saveNotificationSettings();
-  
+
   console.log(`🔇 Chat ${chatId} muted until ${new Date(muteUntil).toLocaleString()}`);
 }
 
@@ -356,16 +354,16 @@ export function isChatMuted(chatId) {
   if (!notificationSettings.chatMuted[chatId]) {
     return false;
   }
-  
+
   const muteUntil = notificationSettings.chatMuted[chatId];
   const now = Date.now();
-  
+
   if (now >= muteUntil) {
     delete notificationSettings.chatMuted[chatId];
     saveNotificationSettings();
     return false;
   }
-  
+
   return true;
 }
 
@@ -374,13 +372,13 @@ export function isChatMuted(chatId) {
  */
 export async function enableDoNotDisturb(duration = null) {
   notificationSettings.doNotDisturb = true;
-  
+
   if (duration) {
     notificationSettings.doNotDisturbUntil = Date.now() + duration;
   } else {
     notificationSettings.doNotDisturbUntil = null; // Indefinite
   }
-  
+
   await saveNotificationSettings();
   console.log('🌙 Do Not Disturb enabled');
 }
@@ -402,7 +400,7 @@ export function isDoNotDisturbActive() {
   if (!notificationSettings.doNotDisturb) {
     return false;
   }
-  
+
   if (notificationSettings.doNotDisturbUntil) {
     const now = Date.now();
     if (now >= notificationSettings.doNotDisturbUntil) {
@@ -412,7 +410,7 @@ export function isDoNotDisturbActive() {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -420,7 +418,6 @@ export function isDoNotDisturbActive() {
  * Update notification UI elements
  */
 function updateNotificationUI(enabled) {
-  // Update bell icon
   const notifyBtn = document.getElementById('notifyBtn');
   if (notifyBtn) {
     notifyBtn.textContent = enabled ? '🔔' : '🔕';
