@@ -1,7 +1,9 @@
 // sw.js
 // Service Worker for PWA Messenger with Push Notifications
 
-const CACHE_NAME = 'pwa-messenger-v1.0.0';
+const CACHE_VERSION = '1.0.0';
+const CACHE_NAME = 'pwa-messenger-' + CACHE_VERSION;
+
 const urlsToCache = [
   '/',
   '/index.html',
@@ -22,7 +24,7 @@ const urlsToCache = [
 // Install event - cache resources
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing Service Worker...');
-  
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -36,7 +38,7 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating Service Worker...');
-  
+
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -59,7 +61,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Skip Firebase requests
-  if (event.request.url.includes('firebaseio.com') || 
+  if (event.request.url.includes('firebaseio.com') ||
       event.request.url.includes('googleapis.com') ||
       event.request.url.includes('gstatic.com')) {
     return;
