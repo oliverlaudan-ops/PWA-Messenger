@@ -1,164 +1,62 @@
-# PWA Messenger
+# 📱 PWA Messenger
 
-Ein moderner Progressive Web App Messenger mit Firebase Backend und modularer Architektur.
+> Eine moderne Progressive Web App (PWA) für Real-time Messaging mit Push Notifications, entwickelt mit Firebase.
 
-🌐 **Live Demo**: https://messenger.future-pulse.tech
-
----
-
-## ✅ Features
-
-### Phase 1: Basic Setup
-- ✅ Firebase Authentication (Login/Register/Logout)
-- ✅ Username System (unique, 3-20 chars)
-- ✅ Global Test Chat
-- ✅ Echtzeit-Nachrichten
-
-### Phase 2: Direktnachrichten
-- ✅ 1-on-1 Chat System
-- ✅ DM Chat-Liste mit Vorschau
-- ✅ Unread Counter (roter Badge)
-- ✅ User Search Modal
-- ✅ Timestamps (formatiert)
-- ✅ Sortierung nach Aktivität
-
-### Phase 3: Gruppen
-- ✅ Gruppen erstellen (Name + Beschreibung)
-- ✅ Gruppenliste mit Unread Badge
-- ✅ Gruppenchat in Echtzeit
-- ✅ Mitgliederzahl anzeigen
-- ✅ Gruppenmitglieder-Modal
-
-### Phase 4: Modular Architecture
-- ✅ Code-Refactoring (35KB → 7 Module)
-- ✅ `modules/state.js` - Firebase & State
-- ✅ `modules/ui.js` - UI Helpers
-- ✅ `modules/users.js` - User Management
-- ✅ `modules/auth.js` - Authentication
-- ✅ `modules/groups.js` - Group Features
-- ✅ `modules/directMessages.js` - DM Features
-- ✅ `modules/groupMembers.js` - Member Management
-- ✅ `app.js` - Main Entry Point
-
-### Phase 5: Gruppenmitgliederverwaltung
-- ✅ Permission-System (Creator/Admin/Member)
-- ✅ **Creator** (👑): Volle Kontrolle + Gruppe löschen
-- ✅ **Admin** (⚡): Verwaltung + Gruppe bearbeiten
-- ✅ **Member** (👤): Grundrechte + Gruppe verlassen
-- ✅ Mitglieder hinzufügen/entfernen
-- ✅ Admins ernennen/entziehen
-- ✅ Gruppe umbenennen/beschreiben
-- ✅ Gruppe löschen (mit Doppelbestätigung)
+**Live Demo:** [https://messenger.future-pulse.tech](https://messenger.future-pulse.tech)
 
 ---
 
-## 🚀 Next Up (Phase 6)
+## 🎯 Features
 
-### Priorität 1: Push-Benachrichtigungen 🔔
-- [ ] Firebase Cloud Messaging Setup
-- [ ] Benachrichtigung bei neuen Nachrichten
-- [ ] Badge-Counter auf App-Icon
-- [ ] Benachrichtigungseinstellungen
+### ✅ Implementierte Features
 
-### Priorität 2: Medien-Upload 📎
-- [ ] Bilder in Chats senden
-- [ ] Firebase Storage Integration
-- [ ] Dateien teilen (PDF, DOCX, etc.)
-- [ ] Thumbnail-Vorschau
+#### Core Messaging
+- **Real-time Messaging** - Instant Message Delivery via Firestore
+- **Gruppen-Chats** - Erstelle und verwalte Gruppenchats
+- **Direct Messages (DMs)** - 1-zu-1 Privatnachrichten
+- **Unread Badges** - Visuelles Feedback für ungelesene Nachrichten
+- **Message History** - Vollständiger Nachrichtenverlauf
 
-### Priorität 3: Nachricht-Suche 🔍
-- [ ] Suche innerhalb Chat
-- [ ] Globale Suche über alle Chats
-- [ ] Filter nach Datum/Sender
+#### Benachrichtigungen
+- **Push Notifications** - Browser Push Notifications (Desktop & Mobile)
+- **Background Notifications** - Benachrichtigungen auch wenn App geschlossen
+- **Notification Settings** - Aktivieren/Deaktivieren per Toggle
+- **Smart Notifications** - Nur bei neuen Nachrichten von anderen Usern
 
-### Priorität 4: Typing Indicator ✍️
-- [ ] "@username schreibt..." Anzeige
-- [ ] Echtzeit-Updates
-- [ ] Timeout nach 3 Sekunden
+#### Progressive Web App (PWA)
+- **Installierbar** - Als native App installierbar auf Desktop & Mobile
+- **Offline-fähig** - Service Worker cached App-Shell
+- **App-like Experience** - Voller Bildschirm ohne Browser-UI
+- **Fast Loading** - Optimierte Performance mit Caching
 
-### Priorität 5: Lesebesttäigungen ✓✓
-- [ ] Doppelhaken wie WhatsApp
-- [ ] "Gelesen von X Personen" (Gruppen)
-- [ ] Optional deaktivierbar
-
-### Priorität 6: Emoji-Reaktionen 😊
-- [ ] Auf Nachrichten reagieren
-- [ ] Emoji-Picker
-- [ ] Counter anzeigen
+#### User Management
+- **Firebase Authentication** - E-Mail/Passwort Login
+- **Benutzernamen-System** - Eindeutige @usernames
+- **User Search** - Suche nach Benutzern für DMs
+- **User Avatars** - Initialen-basierte Avatare
 
 ---
 
-## 🛠️ Setup
+## 🏗️ Technologie-Stack
 
-### 1. Repository klonen
+### Frontend
+- **Vanilla JavaScript (ES6+)** - Modular mit ES Modules
+- **HTML5 & CSS3** - Modernes, responsives Design
+- **Service Worker** - PWA & Push Notifications
+- **Firebase SDK v10.13.1**
+  - Firebase Authentication
+  - Cloud Firestore
+  - Firebase Cloud Messaging (FCM)
 
-```bash
-git clone https://github.com/oliverlaudan-ops/PWA-Messenger.git
-cd PWA-Messenger
-```
+### Backend
+- **Firebase Cloud Functions** - Serverless Node.js Functions
+- **Cloud Firestore** - NoSQL Real-time Database
+- **Firebase Cloud Messaging** - Push Notification Delivery
 
-### 2. Firebase Konfiguration einrichten
-
-**WICHTIG:** Die Firebase-Konfiguration ist aus Sicherheitsgründen nicht im Repository enthalten.
-
-1. Erstelle eine Kopie der Beispiel-Datei:
-   ```bash
-   cp firebase.config.example.js firebase.config.js
-   ```
-
-2. Öffne `firebase.config.js` und ersetze die Platzhalter mit deinen echten Firebase-Credentials:
-
-   ```javascript
-   export const firebaseConfig = {
-     apiKey: "DEIN_API_KEY",
-     authDomain: "DEIN_PROJECT_ID.firebaseapp.com",
-     projectId: "DEIN_PROJECT_ID",
-     storageBucket: "DEIN_PROJECT_ID.firebasestorage.app",
-     messagingSenderId: "DEINE_SENDER_ID",
-     appId: "DEINE_APP_ID",
-     measurementId: "DEINE_MEASUREMENT_ID"
-   };
-   ```
-
-3. Wo findest du diese Werte?
-   - Gehe zur [Firebase Console](https://console.firebase.google.com/)
-   - Wähle dein Projekt aus
-   - Klicke auf **Projekteinstellungen** (Zahnrad-Symbol)
-   - Scrolle zu **Deine Apps** → **Web-App**
-   - Kopiere die Config-Werte
-
-### 3. Firebase Rules deployen
-
-```bash
-# Firebase CLI installieren (falls noch nicht vorhanden)
-npm install -g firebase-tools
-
-# Anmelden
-firebase login
-
-# Projekt initialisieren
-firebase init firestore
-
-# Rules deployen
-firebase deploy --only firestore:rules
-```
-
-### 4. App starten
-
-Da es sich um eine reine Frontend-App handelt, kannst du sie einfach mit einem lokalen Webserver starten:
-
-```bash
-# Option 1: Python SimpleHTTPServer
-python -m http.server 8000
-
-# Option 2: Node.js http-server
-npx http-server -p 8000
-
-# Option 3: VS Code Live Server Extension
-# Rechtsklick auf index.html → "Open with Live Server"
-```
-
-Öffne dann [http://localhost:8000](http://localhost:8000) im Browser.
+### Deployment
+- **GitHub Actions** - Automated CI/CD Pipeline
+- **GitHub Pages** - Static Site Hosting
+- **Custom Domain** - messenger.future-pulse.tech
 
 ---
 
@@ -166,88 +64,532 @@ npx http-server -p 8000
 
 ```
 PWA-Messenger/
-├── index.html              # Haupt-HTML-Datei
-├── styles.css              # Styling
-├── app.js                  # Main Entry Point
-├── modules/
-│   ├── state.js            # Firebase & Shared State
-│   ├── ui.js               # UI Helpers & Formatting
-│   ├── users.js            # User Search & Caching
-│   ├── auth.js             # Authentication
-│   ├── groups.js           # Group Functionality
-│   ├── directMessages.js   # DM Functionality
-│   └── groupMembers.js     # Member Management
-├── firebase.config.js      # Firebase Config (nicht im Repo!)
-├── firebase.config.example.js  # Beispiel-Config
-├── firestore.rules         # Firestore Security Rules
-├── manifest.json           # PWA Manifest
-├── sw.js                   # Service Worker
-├── firebase.json           # Firebase Deployment Config
-├── CHANGELOG.md            # Vollständige Feature-Dokumentation
-├── ROADMAP.md              # Geplante Features & Milestones
-└── README.md               # Diese Datei
+├── index.html                 # Main HTML file
+├── styles.css                # Global styles
+├── app.js                    # App initialization
+├── firebase.js               # Legacy Firebase config (backup)
+├── manifest.json             # PWA Manifest
+├── sw.js                     # Main Service Worker (caching)
+├── firebase-messaging-sw.js  # FCM Service Worker (notifications)
+│
+├── modules/                  # JavaScript Modules
+│   ├── state.js             # Global state & Firebase init
+│   ├── auth.js              # Authentication logic
+│   ├── ui.js                # UI utilities
+│   ├── users.js             # User management
+│   ├── groups.js            # Group chat logic
+│   ├── groupMembers.js      # Group member management
+│   ├── directMessages.js    # DM logic
+│   └── notifications.js     # Push notification handling
+│
+├── functions/               # Firebase Cloud Functions
+│   ├── index.js            # Function definitions
+│   ├── package.json        # Node.js dependencies
+│   └── .firebaserc         # Firebase project config
+│
+├── icons/                   # PWA Icons
+│   ├── icon-192x192.png
+│   ├── icon-512x512.png
+│   └── icon-96x96.png
+│
+└── .github/
+    └── workflows/
+        └── deploy.yml       # GitHub Actions deployment
 ```
 
 ---
 
-## 🔒 Sicherheit
+## 🔧 Setup & Installation
 
-### Firebase API Key
+### Voraussetzungen
 
-⚠️ **Wichtig:** Die Datei `firebase.config.js` ist in `.gitignore` und wird **NICHT** ins Repository committed.
+- **Node.js** (v18+)
+- **npm** oder **yarn**
+- **Firebase CLI**: `npm install -g firebase-tools`
+- **Git**
 
-- Der Firebase Web API Key ist designed, um public zu sein
-- Die echte Sicherheit kommt von den **Firestore Security Rules** (siehe `firestore.rules`)
-- Trotzdem solltest du in Firebase folgende Schutzmaßnahmen aktivieren:
+### Lokale Entwicklung
 
-### Firebase Console - Empfohlene Einstellungen
+#### 1. Repository klonen
 
-1. **Authentication → Settings → Authorized domains**
-   - Nur deine echte Domain hinzufügen
-   - `localhost` nur in Development erlauben
+```bash
+git clone https://github.com/oliverlaudan-ops/PWA-Messenger.git
+cd PWA-Messenger
+```
 
-2. **Firestore → Rules**
-   - Rules sind bereits in `firestore.rules` definiert
-   - Mit `firebase deploy --only firestore:rules` deployen
+#### 2. Firebase Projekt erstellen
 
-3. **Project Settings → General → App Check** (optional aber empfohlen)
-   - App Check aktivieren für zusätzlichen Bot-Schutz
+1. Gehe zu [Firebase Console](https://console.firebase.google.com/)
+2. Erstelle neues Projekt
+3. Aktiviere:
+   - **Authentication** (E-Mail/Passwort)
+   - **Cloud Firestore**
+   - **Cloud Messaging**
+
+#### 3. Firebase Config eintragen
+
+**Dateien die aktualisiert werden müssen:**
+- `modules/state.js`
+- `firebase.js` (Legacy backup)
+- `firebase-messaging-sw.js`
+
+**Firebase Config:**
+```javascript
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.firebasestorage.app",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID"
+};
+```
+
+#### 4. VAPID Key für FCM
+
+1. Firebase Console → Project Settings → Cloud Messaging
+2. Web Push certificates → Generate key pair
+3. Kopiere den Key
+4. Trage in `modules/notifications.js` ein:
+
+```javascript
+const VAPID_KEY = 'YOUR_VAPID_KEY';
+```
+
+#### 5. Firestore Security Rules
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Groups
+    match /groups/{groupId} {
+      allow read: if request.auth != null && 
+                     request.auth.uid in resource.data.members;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && 
+                       request.auth.uid in resource.data.members;
+    }
+    
+    // Group Messages
+    match /groupMessages/{groupId}/messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Direct Messages
+    match /directMessages/{chatId}/messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Chats (DM metadata)
+    match /chats/{chatId} {
+      allow read: if request.auth != null && 
+                     request.auth.uid in resource.data.participants;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+#### 6. Cloud Functions deployen
+
+```bash
+cd functions
+npm install
+firebase login
+firebase deploy --only functions
+```
+
+#### 7. Lokalen Development Server starten
+
+```bash
+# Mit Python
+python3 -m http.server 8000
+
+# ODER mit Node.js
+npx http-server -p 8000
+```
+
+Öffne: `http://localhost:8000`
 
 ---
 
-## 📊 Tech Stack
+## 🚀 Deployment
 
-- **Frontend:** Vanilla JavaScript (ES6 Modules)
-- **Backend:** Firebase (Firestore + Authentication)
-- **Architecture:** Modular (7 separate modules)
-- **Styling:** Custom CSS mit Glasmorphism
-- **PWA:** Service Worker + Manifest
-- **CI/CD:** GitHub Actions → Firebase Hosting
+### Automatisches Deployment (GitHub Actions)
 
----
+Bei jedem Push auf `main` Branch:
 
-## 📚 Dokumentation
+1. GitHub Actions startet automatisch
+2. Deployed auf GitHub Pages
+3. Erreichbar unter: `https://messenger.future-pulse.tech`
 
-- **[CHANGELOG.md](CHANGELOG.md)** - Vollständige Feature-Dokumentation (Phasen 1-5)
-- **[ROADMAP.md](ROADMAP.md)** - Geplante Features & Milestones (Phase 6+)
-- **[firestore.rules](firestore.rules)** - Firestore Security Rules
+**Workflow Datei:** `.github/workflows/deploy.yml`
 
----
+### Manuelles Deployment
 
-## 👥 Contributors
+```bash
+# Frontend
+git add .
+git commit -m "Update"
+git push origin main
 
-**Oliver Laudan** ([@oliverlaudan-ops](https://github.com/oliverlaudan-ops)) - Main Developer
-
-**Perplexity AI** - Development Assistant
-
----
-
-## 📜 Lizenz
-
-MIT
+# Functions
+cd functions
+firebase deploy --only functions
+```
 
 ---
 
-**Version:** 0.5.0
+## 🔔 Push Notifications - Technische Details
 
-**Last Updated:** February 18, 2026
+### Architektur
+
+```
+User sendet Nachricht
+     ↓
+Firestore onCreate Trigger
+     ↓
+Cloud Function (onNewGroupMessage / onNewDirectMessage)
+     ↓
+Prüft Empfänger Notification Settings
+     ↓
+Sendet FCM Message an Token
+     ↓
+firebase-messaging-sw.js empfängt
+     ↓
+Browser zeigt System Notification
+```
+
+### Service Worker Registrierung
+
+**Zwei Service Workers:**
+
+1. **`sw.js`** - App Shell Caching, Offline-Funktionalität
+2. **`firebase-messaging-sw.js`** - Push Notifications (FCM)
+
+### FCM Token Lifecycle
+
+```javascript
+// 1. Permission Request
+Notification.requestPermission()
+
+// 2. Token Generation
+getToken(messaging, { vapidKey, serviceWorkerRegistration })
+
+// 3. Token Storage
+Firestore: users/{userId}/fcmTokens/{token}
+
+// 4. Token Cleanup (nach 30 Tagen inaktiv)
+Cloud Function: cleanupOldTokens
+```
+
+### Notification Payload
+
+```javascript
+{
+  notification: {
+    title: "👥 Gruppenname",
+    body: "Username: Nachrichtentext"
+  },
+  data: {
+    chatId: "group_123",
+    chatType: "group",
+    senderId: "user_456",
+    unreadCount: "3"
+  },
+  webpush: {
+    fcmOptions: {
+      link: "https://messenger.future-pulse.tech/?openChat=group_123"
+    }
+  }
+}
+```
+
+---
+
+## 📊 Datenbank-Schema
+
+### Collections
+
+#### `users`
+```javascript
+{
+  userId: {
+    username: "john_doe",
+    email: "john@example.com",
+    createdAt: Timestamp,
+    fcmTokens: {
+      "token_abc123": {
+        createdAt: Timestamp,
+        lastUsed: Timestamp,
+        userAgent: "Mozilla/5.0..."
+      }
+    },
+    notificationsEnabled: true,
+    notificationSettings: {
+      enabled: true,
+      sound: true,
+      chatMuted: {},
+      doNotDisturb: false
+    }
+  }
+}
+```
+
+#### `groups`
+```javascript
+{
+  groupId: {
+    name: "Team Chat",
+    description: "Projektbesprechungen",
+    members: ["userId1", "userId2"],
+    admins: ["userId1"],
+    createdBy: "userId1",
+    createdAt: Timestamp,
+    lastMessage: "Letzte Nachricht...",
+    lastMessageTime: Timestamp,
+    unreadCount: {
+      "userId2": 3
+    }
+  }
+}
+```
+
+#### `groupMessages/{groupId}/messages`
+```javascript
+{
+  messageId: {
+    text: "Nachrichtentext",
+    uid: "userId1",
+    username: "john_doe",
+    createdAt: Timestamp
+  }
+}
+```
+
+#### `chats`
+```javascript
+{
+  "userId1_userId2": {
+    participants: ["userId1", "userId2"],
+    lastMessage: "Hey!",
+    lastMessageTime: Timestamp,
+    unreadCount: {
+      "userId2": 1
+    }
+  }
+}
+```
+
+#### `directMessages/{chatId}/messages`
+```javascript
+{
+  messageId: {
+    text: "DM Text",
+    uid: "userId1",
+    username: "john_doe",
+    createdAt: Timestamp
+  }
+}
+```
+
+---
+
+## 🔐 Sicherheit
+
+### Firebase Security Rules
+
+- ✅ Nur authentifizierte User haben Zugriff
+- ✅ User können nur eigene Daten ändern
+- ✅ Gruppenmitglieder sehen nur ihre Gruppen
+- ✅ DM-Teilnehmer sehen nur ihre Chats
+
+### API Keys
+
+- Firebase Web API Keys sind **öffentlich** (designed für Client-Side)
+- Sicherheit wird durch Firestore Rules erzwungen
+- Server Keys (für Cloud Functions) sind privat
+
+### Best Practices
+
+- ✅ Keine sensitiven Daten im Client-Code
+- ✅ Firestore Rules validieren alle Zugriffe
+- ✅ FCM Tokens werden nach 30 Tagen gelöscht
+- ✅ Passwords werden von Firebase Auth gehashed
+
+---
+
+## 🧪 Testing
+
+### Lokales Testing
+
+```bash
+# 1. Lokalen Server starten
+python3 -m http.server 8000
+
+# 2. Browser öffnen
+http://localhost:8000
+
+# 3. Zwei Browser-Fenster öffnen
+# - Browser 1: User A
+# - Browser 2: User B
+
+# 4. Push Notifications testen:
+# - Browser 1: In Hintergrund (anderer Tab)
+# - Browser 2: Nachricht senden
+# - Browser 1: Notification sollte erscheinen
+```
+
+### Cloud Functions lokal testen
+
+```bash
+cd functions
+npm run serve
+```
+
+### Firestore Emulator
+
+```bash
+firebase emulators:start
+```
+
+---
+
+## 📱 PWA Installation
+
+### Desktop (Chrome/Edge)
+
+1. Öffne https://messenger.future-pulse.tech
+2. Adressleiste → "⊕ Installieren" Button
+3. Bestätige Installation
+4. App öffnet sich als standalone Window
+
+### Mobile (iOS Safari)
+
+1. Öffne https://messenger.future-pulse.tech
+2. Teilen-Button → "Zum Home-Bildschirm"
+3. Bestätige
+4. App erscheint als Icon auf Home-Screen
+
+### Mobile (Android Chrome)
+
+1. Öffne https://messenger.future-pulse.tech
+2. Menü → "App installieren"
+3. Bestätige
+4. App erscheint in App-Drawer
+
+---
+
+## 🐛 Troubleshooting
+
+### Push Notifications funktionieren nicht
+
+**Problem:** Keine Notifications bei neuen Nachrichten
+
+**Lösungen:**
+
+1. **Permission prüfen:**
+   ```javascript
+   console.log(Notification.permission); // Sollte "granted" sein
+   ```
+
+2. **Service Worker prüfen:**
+   - F12 → Application → Service Workers
+   - `firebase-messaging-sw.js` sollte aktiv sein
+
+3. **FCM Token prüfen:**
+   - F12 → Console
+   - Sollte: `📱 FCM Token: ...` zeigen
+
+4. **Cloud Functions Logs prüfen:**
+   - https://console.firebase.google.com/project/pwa-messenger-oliver/functions/logs
+   - Sollte: "✅ Successfully sent X notifications"
+
+5. **App muss im Hintergrund sein:**
+   - Wechsle zu anderem Tab
+   - Oder minimiere Browser
+
+### Service Worker Update
+
+**Problem:** Neue Version wird nicht geladen
+
+**Lösung:**
+```javascript
+// F12 → Application → Service Workers
+// Klicke "Unregister" bei allen Workers
+// Hard Reload: Ctrl+Shift+R
+```
+
+### Firestore Permission Denied
+
+**Problem:** `permission-denied` Error
+
+**Lösung:**
+- Prüfe Firestore Rules in Firebase Console
+- Stelle sicher dass User eingeloggt ist
+- Prüfe ob User Mitglied der Gruppe ist
+
+---
+
+## 🚀 Zukünftige Features (Roadmap)
+
+### Priorität 1 (Geplant)
+- [ ] **Chat Mute** - Einzelne Chats stummschalten
+- [ ] **Typing Indicators** - "XY schreibt..."
+- [ ] **Read Receipts** - Gesehen-Status bei Nachrichten
+
+### Priorität 2 (Nice-to-have)
+- [ ] **Message Reactions** - Emoji Reactions (👍❤️😂)
+- [ ] **Image/File Uploads** - Bilder & Dateien senden
+- [ ] **Voice Messages** - Sprachnachrichten aufnehmen
+- [ ] **Group Admin Features** - Mitglieder hinzufügen/entfernen
+- [ ] **User Profiles** - Profilbilder & Status
+- [ ] **Search** - Nachrichten durchsuchen
+- [ ] **Dark Mode** - Dunkles Theme
+
+---
+
+## 📄 Lizenz
+
+MIT License - Siehe LICENSE Datei
+
+---
+
+## 👤 Autor
+
+**Oliver Laudan**
+- GitHub: [@oliverlaudan-ops](https://github.com/oliverlaudan-ops)
+- Email: oliver.laudan@gmail.com
+
+---
+
+## 🙏 Credits
+
+- **Firebase** - Backend Infrastructure
+- **Google Cloud** - Hosting & Functions
+- **GitHub** - Code Hosting & CI/CD
+
+---
+
+## 📞 Support
+
+Bei Fragen oder Problemen:
+
+1. **GitHub Issues** - [Issues erstellen](https://github.com/oliverlaudan-ops/PWA-Messenger/issues)
+2. **Email** - oliver.laudan@gmail.com
+
+---
+
+**Version:** 1.0.0  
+**Letztes Update:** Februar 2026  
+**Status:** ✅ Production Ready
