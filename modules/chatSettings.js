@@ -96,7 +96,7 @@ async function handleMute(chatId, duration) {
       showMuteNotification(`Chat stumm für ${durationText}`);
     }
 
-    // Update UI
+    // Update both possible mute buttons
     updateMuteButton(chatId, true);
   } catch (error) {
     console.error('Error muting chat:', error);
@@ -112,7 +112,7 @@ async function handleUnmute(chatId) {
     await unmuteChat(chatId);
     showMuteNotification('Chat-Stummschaltung aufgehoben');
 
-    // Update UI
+    // Update both possible mute buttons
     updateMuteButton(chatId, false);
   } catch (error) {
     console.error('Error unmuting chat:', error);
@@ -121,10 +121,14 @@ async function handleUnmute(chatId) {
 }
 
 /**
- * Update mute button icon based on mute status
+ * Update mute button icon based on mute status.
+ * Updates whichever button is currently visible (group or DM).
+ * @param {string} chatId
+ * @param {boolean} isMuted
  */
 export function updateMuteButton(chatId, isMuted) {
-  const muteBtn = document.getElementById('muteChatBtn');
+  // Try group chat button first, then DM button
+  const muteBtn = document.getElementById('muteChatBtn') || document.getElementById('muteChatBtnDM');
   if (muteBtn) {
     muteBtn.textContent = isMuted ? '🔇' : '🔔';
     muteBtn.title = isMuted ? 'Stummschaltung aufheben' : 'Chat stummschalten';
@@ -133,11 +137,26 @@ export function updateMuteButton(chatId, isMuted) {
 }
 
 /**
- * Initialize mute button state for current chat
+ * Initialize mute button state for current chat.
+ * Checks both group and DM buttons so the correct visible one gets updated.
+ * @param {string} chatId
  */
 export function initMuteButton(chatId) {
   const isMuted = isChatMuted(chatId);
-  updateMuteButton(chatId, isMuted);
+  // Update group button if present
+  const groupBtn = document.getElementById('muteChatBtn');
+  if (groupBtn) {
+    groupBtn.textContent = isMuted ? '🔇' : '🔔';
+    groupBtn.title = isMuted ? 'Stummschaltung aufheben' : 'Chat stummschalten';
+    groupBtn.dataset.chatId = chatId;
+  }
+  // Update DM button if present
+  const dmBtn = document.getElementById('muteChatBtnDM');
+  if (dmBtn) {
+    dmBtn.textContent = isMuted ? '🔇' : '🔔';
+    dmBtn.title = isMuted ? 'Stummschaltung aufheben' : 'Chat stummschalten';
+    dmBtn.dataset.chatId = chatId;
+  }
 }
 
 /**
