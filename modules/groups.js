@@ -176,12 +176,20 @@ export async function openGroupChat(groupId, groupName) {
   setCurrentGroup({ groupId, groupName });
   setHasResetUnread(false);
   
+  // Set global variable for mute functionality
+  window.currentGroupId = groupId;
+  
   document.getElementById('groupListView').classList.add('hidden');
   document.getElementById('groupChatView').classList.remove('hidden');
   document.getElementById('groupChatName').textContent = `👥 ${groupName}`;
   
   // Set data attribute for members modal
   document.getElementById('groupChatView').dataset.groupId = groupId;
+  
+  // Initialize mute button
+  if (window.initMuteButton) {
+    window.initMuteButton(groupId);
+  }
   
   // Load group data for member count
   const groupDoc = await getDoc(doc(db, 'groups', groupId));
@@ -205,6 +213,9 @@ export function closeGroupChat() {
     groupUnsubscribe();
     setGroupUnsubscribe(null);
   }
+  
+  // Clear global variable
+  window.currentGroupId = null;
   
   setCurrentGroup(null);
   setHasResetUnread(false);
