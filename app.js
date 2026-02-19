@@ -44,6 +44,10 @@ import {
   updateAppBadge,
   clearAppBadge
 } from './modules/notifications.js';
+import {
+  showMuteMenu,
+  initMuteButton
+} from './modules/chatSettings.js';
 
 // Expose functions to window for onclick handlers in HTML
 window.showLogin = () => showScreen('loginScreen');
@@ -87,6 +91,38 @@ window.isDoNotDisturbActive = isDoNotDisturbActive;
 window.getNotificationSettings = getNotificationSettings;
 window.showNotificationSettings = showNotificationSettings;
 window.closeNotificationSettings = closeNotificationSettings;
+
+// Chat Settings functions
+window.toggleChatMute = toggleChatMute;
+window.initMuteButton = initMuteButton;
+
+/**
+ * Toggle mute for current chat
+ */
+function toggleChatMute() {
+  // Determine which chat is currently open
+  const groupChatView = document.getElementById('groupChatView');
+  const dmChatView = document.getElementById('dmChatView');
+  
+  let chatId = null;
+  let muteBtn = null;
+  
+  if (!groupChatView.classList.contains('hidden')) {
+    // Group chat is open
+    chatId = window.currentGroupId;
+    muteBtn = document.getElementById('muteChatBtn');
+  } else if (!dmChatView.classList.contains('hidden')) {
+    // DM chat is open
+    chatId = window.currentDMChatId;
+    muteBtn = document.getElementById('muteChatBtnDM');
+  }
+  
+  if (chatId && muteBtn) {
+    showMuteMenu(chatId, muteBtn);
+  } else {
+    console.error('Could not determine current chat');
+  }
+}
 
 // Notification Settings Modal
 function showNotificationSettings() {
