@@ -48,6 +48,7 @@ import {
   showMuteMenu,
   initMuteButton
 } from './modules/chatSettings.js';
+import { getCurrentGroupId, getCurrentDMChatId } from './modules/state.js';
 
 // Expose functions to window for onclick handlers in HTML
 window.showLogin = () => showScreen('loginScreen');
@@ -103,20 +104,20 @@ function toggleChatMute() {
   // Determine which chat is currently open
   const groupChatView = document.getElementById('groupChatView');
   const dmChatView = document.getElementById('dmChatView');
-  
+
   let chatId = null;
   let muteBtn = null;
-  
+
   if (!groupChatView.classList.contains('hidden')) {
     // Group chat is open
-    chatId = window.currentGroupId;
+    chatId = getCurrentGroupId();
     muteBtn = document.getElementById('muteChatBtn');
   } else if (!dmChatView.classList.contains('hidden')) {
     // DM chat is open
-    chatId = window.currentDMChatId;
+    chatId = getCurrentDMChatId();
     muteBtn = document.getElementById('muteChatBtnDM');
   }
-  
+
   if (chatId && muteBtn) {
     showMuteMenu(chatId, muteBtn);
   } else {
@@ -142,14 +143,14 @@ function closeNotificationSettings() {
 
 function updateNotificationSettingsUI() {
   const settings = getNotificationSettings();
-  
+
   const enabledToggle = document.getElementById('notificationsEnabled');
   const soundToggle = document.getElementById('notificationSound');
   const dndStatus = document.getElementById('dndStatus');
-  
+
   if (enabledToggle) enabledToggle.checked = settings.enabled;
   if (soundToggle) soundToggle.checked = settings.sound;
-  
+
   if (dndStatus) {
     if (settings.doNotDisturb) {
       if (settings.doNotDisturbUntil) {
@@ -180,10 +181,10 @@ window.addEventListener('startDirectMessage', (e) => {
 // Listen for service worker messages (notification clicks)
 navigator.serviceWorker?.addEventListener('message', (event) => {
   console.log('Message from SW:', event.data);
-  
+
   if (event.data.type === 'NOTIFICATION_CLICKED') {
     const { data } = event.data;
-    
+
     // Navigate to the relevant chat
     if (data.chatId && data.chatType === 'group') {
       openGroupChat(data.chatId, data.chatName || 'Gruppe');
@@ -196,7 +197,7 @@ navigator.serviceWorker?.addEventListener('message', (event) => {
       }
     }
   }
-  
+
   if (event.data.type === 'BADGE_UPDATE') {
     updateAppBadge(event.data.count);
   }
@@ -207,7 +208,7 @@ window.addEventListener('load', () => {
   const urlParams = new URLSearchParams(window.location.search);
   const openChat = urlParams.get('openChat');
   const chatType = urlParams.get('type');
-  
+
   if (openChat && chatType) {
     setTimeout(() => {
       if (chatType === 'group') {
