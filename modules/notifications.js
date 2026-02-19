@@ -15,8 +15,7 @@ let notificationSettings = {
   doNotDisturbUntil: null
 };
 
-// VAPID Key - Muss in Firebase Console generiert werden
-// Cloud Messaging → Web Configuration → Web Push certificates
+// VAPID Key
 const VAPID_KEY = 'BJN1R7PuO5Td7DNzUOOoZvxrlKht9I06-qaa8XnR11q3DKEFHagPYjRRcdwFVY7jo7N6eG0fvaP5hTr0YtMCL1o';
 
 /**
@@ -117,9 +116,12 @@ async function registerFCMToken() {
       return;
     }
 
-    // Register service worker
-    const registration = await navigator.serviceWorker.register('/sw.js');
-    console.log('Service Worker registered for notifications');
+    // Register Firebase Messaging service worker
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    console.log('📧 Firebase Messaging SW registered');
+    
+    // Wait for service worker to be ready
+    await navigator.serviceWorker.ready;
 
     // Get FCM token
     const token = await getToken(messaging, {
@@ -259,7 +261,7 @@ function displayNotification(payload) {
  */
 function playNotificationSound() {
   try {
-    const audio = new Audio('/notification.mp3'); // You'll need to add this file
+    const audio = new Audio('/notification.mp3');
     audio.volume = 0.5;
     audio.play().catch(e => console.log('Could not play sound:', e));
   } catch (error) {
