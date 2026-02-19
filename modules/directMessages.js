@@ -197,11 +197,20 @@ export async function startDirectMessage(user) {
   setCurrentDMUser(user);
   setHasResetUnread(false);
   
+  const chatId = createChatId(auth.currentUser.uid, user.uid);
+  
+  // Set global variable for mute functionality
+  window.currentDMChatId = chatId;
+  
   document.getElementById('dmListView').classList.add('hidden');
   document.getElementById('dmChatView').classList.remove('hidden');
   document.getElementById('dmChatUsername').textContent = `👤 @${user.username}`;
   
-  const chatId = createChatId(auth.currentUser.uid, user.uid);
+  // Initialize mute button
+  if (window.initMuteButton) {
+    window.initMuteButton(chatId);
+  }
+  
   const chatRef = doc(db, 'chats', chatId);
   const chatSnap = await getDoc(chatRef);
   if (!chatSnap.exists()) {
@@ -220,6 +229,9 @@ export function closeDMChat() {
     dmUnsubscribe();
     setDmUnsubscribe(null);
   }
+  
+  // Clear global variable
+  window.currentDMChatId = null;
   
   setCurrentDMUser(null);
   setHasResetUnread(false);
