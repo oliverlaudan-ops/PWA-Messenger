@@ -348,6 +348,111 @@ textarea {
   }
 }
 
+/* Mute Menu Styles */
+.mute-menu {
+  position: fixed;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  animation: menuSlideIn 0.2s ease;
+  overflow: hidden;
+}
+
+@keyframes menuSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mute-menu-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.mute-menu-item:last-child {
+  border-bottom: none;
+}
+
+.mute-menu-item:hover {
+  background: #f5f5f5;
+}
+
+.mute-menu-item:active {
+  background: #e0e0e0;
+}
+
+/* Mute Notification Toast */
+.mute-notification {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #333;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.mute-notification.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Muted Badge */
+.muted-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #ff9800;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+/* Mute Button in Chat Header */
+#muteChatBtn {
+  background: white;
+  border: 2px solid #e0e0e0;
+  color: #666;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+#muteChatBtn:hover {
+  background: #f5f5f5;
+  border-color: #667eea;
+}
+
+#muteChatBtn:active {
+  transform: scale(0.95);
+}
+
 /* Role Badges */
 .role-badge {
   display: inline-block;
@@ -612,5 +717,15 @@ textarea {
   .dm-chat-header .btn-small {
     width: 100%;
     margin-top: 10px;
+  }
+  
+  .mute-menu {
+    min-width: 180px;
+  }
+  
+  .mute-notification {
+    bottom: 20px;
+    max-width: 90%;
+    font-size: 13px;
   }
 }
