@@ -48,7 +48,7 @@ import {
   showMuteMenu,
   initMuteButton
 } from './modules/chatSettings.js';
-import { getCurrentGroupId, getCurrentDMChatId } from './modules/state.js';
+import * as State from './modules/state.js';
 
 // Expose functions to window for onclick handlers in HTML
 window.showLogin = () => showScreen('loginScreen');
@@ -109,12 +109,12 @@ function toggleChatMute() {
   let muteBtn = null;
 
   if (!groupChatView.classList.contains('hidden')) {
-    // Group chat is open
-    chatId = getCurrentGroupId();
+    // Group chat is open — read live value from State module
+    chatId = State.currentGroupId;
     muteBtn = document.getElementById('muteChatBtn');
   } else if (!dmChatView.classList.contains('hidden')) {
-    // DM chat is open
-    chatId = getCurrentDMChatId();
+    // DM chat is open — read live value from State module
+    chatId = State.currentDMChatId;
     muteBtn = document.getElementById('muteChatBtnDM');
   }
 
