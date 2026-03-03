@@ -807,3 +807,24 @@ textarea {
 [data-theme="dark"] .read-receipt {
   color: #22c55e;
 }
+
+/* Own messages - different background */
+.message.my-message {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.message.my-message .username {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.message.my-message .text {
+  color: white;
+}
+
+.message.my-message .time {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.message.my-message .read-receipt {
+  color: #90EE90;
+}

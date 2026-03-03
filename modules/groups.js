@@ -246,6 +246,9 @@ async function appendGroupMessage(docSnap) {
   const data = docSnap.data();
   const div = document.createElement('div');
   div.className = 'message';
+  if (data.uid === auth.currentUser?.uid) {
+    div.classList.add('my-message');
+  }
   div.setAttribute('data-group-msg-id', docSnap.id);
 
   let username = data.username || 'Unbekannt';
@@ -272,17 +275,18 @@ async function appendGroupMessage(docSnap) {
     div.appendChild(timeSpan);
   }
 
-  // Read receipt indicator (exclude sender)
+  // Read receipt indicator - only show for own messages
   const readBy = data.readBy || [];
+  const isMyMessage = data.uid === auth.currentUser?.uid;
   const otherReaders = readBy.filter(uid => uid !== auth.currentUser?.uid);
   
-  if (otherReaders.length >= 2) {
+  if (isMyMessage && otherReaders.length >= 2) {
     const readSpan = document.createElement('span');
     readSpan.className = 'read-receipt';
     readSpan.title = `Gelesen von ${otherReaders.length} Personen`;
     readSpan.textContent = '✓✓';
     div.appendChild(readSpan);
-  } else if (otherReaders.length === 1) {
+  } else if (isMyMessage && otherReaders.length === 1) {
     const readSpan = document.createElement('span');
     readSpan.className = 'read-receipt';
     readSpan.title = 'Gelesen';
@@ -310,11 +314,12 @@ async function updateGroupMessage(docSnap) {
     timeSpan.textContent = formatTimestamp(data.createdAt);
   }
 
-  // Update read receipt
+  // Update read receipt - only for own messages
   const readBy = data.readBy || [];
+  const isMyMessage = data.uid === auth.currentUser?.uid;
   const otherReaders = readBy.filter(uid => uid !== auth.currentUser?.uid);
   
-  if (otherReaders.length >= 2) {
+  if (isMyMessage && otherReaders.length >= 2) {
     if (!readReceipt) {
       readReceipt = document.createElement('span');
       readReceipt.className = 'read-receipt';
@@ -322,7 +327,7 @@ async function updateGroupMessage(docSnap) {
     }
     readReceipt.textContent = '✓✓';
     readReceipt.title = `Gelesen von ${otherReaders.length} Personen`;
-  } else if (otherReaders.length === 1) {
+  } else if (isMyMessage && otherReaders.length === 1) {
     if (!readReceipt) {
       readReceipt = document.createElement('span');
       readReceipt.className = 'read-receipt';

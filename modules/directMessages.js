@@ -330,6 +330,9 @@ async function appendDMMessage(docSnap) {
   const data = docSnap.data();
   const div = document.createElement('div');
   div.className = 'message';
+  if (data.uid === auth.currentUser?.uid) {
+    div.classList.add('my-message');
+  }
   div.setAttribute('data-dm-msg-id', docSnap.id);
 
   let username = data.username || 'Unbekannt';
@@ -356,13 +359,16 @@ async function appendDMMessage(docSnap) {
     div.appendChild(timeSpan);
   }
 
-  // Read receipt for DMs (single/double check)
+  // Read receipt for DMs - only show for own messages
   const readBy = data.readBy || [];
-  if (readBy.length > 1 || (readBy.length === 1 && readBy[0] === auth.currentUser?.uid)) {
+  const isMyMessage = data.uid === auth.currentUser?.uid;
+  const otherReaders = readBy.filter(uid => uid !== auth.currentUser?.uid);
+  
+  if (isMyMessage && otherReaders.length >= 1) {
     const readSpan = document.createElement('span');
     readSpan.className = 'read-receipt';
-    readSpan.textContent = '✓✓';
-    readSpan.title = 'Gelesen';
+    readSpan.textContent = otherReaders.length >= 2 ? '✓✓' : '✓';
+    readSpan.title = otherReaders.length >= 2 ? `Gelesen von ${otherReaders.length}` : 'Gelesen';
     div.appendChild(readSpan);
   }
 
@@ -386,16 +392,19 @@ async function updateDMMessage(docSnap) {
     timeSpan.textContent = formatTimestamp(data.createdAt);
   }
 
-  // Update read receipt
+  // Update read receipt - only for own messages
   const readBy = data.readBy || [];
-  if ((readBy.length > 1) || (readBy.length === 1 && readBy[0] === auth.currentUser?.uid)) {
+  const isMyMessage = data.uid === auth.currentUser?.uid;
+  const otherReaders = readBy.filter(uid => uid !== auth.currentUser?.uid);
+  
+  if (isMyMessage && otherReaders.length >= 1) {
     if (!readReceipt) {
       readReceipt = document.createElement('span');
       readReceipt.className = 'read-receipt';
       existingMsg.appendChild(readReceipt);
     }
-    readReceipt.textContent = '✓✓';
-    readReceipt.title = 'Gelesen';
+    readReceipt.textContent = otherReaders.length >= 2 ? '✓✓' : '✓';
+    readReceipt.title = otherReaders.length >= 2 ? `Gelesen von ${otherReaders.length}` : 'Gelesen';
   }
 }
 
