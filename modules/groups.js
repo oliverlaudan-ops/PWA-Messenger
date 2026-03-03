@@ -45,15 +45,15 @@ export async function markAllGroupMessagesAsRead(groupId) {
   if (!auth.currentUser) return;
   
   try {
-    const msgsSnapshot = await getDocs(query(
-      collection(db, 'groupMessages', groupId, 'messages'),
-      where('readBy', 'not-in', [auth.currentUser.uid])
-    ));
+    // Get all messages - simpler approach
+    const msgsSnapshot = await getDocs(collection(db, 'groupMessages', groupId, 'messages'));
     
     const batch = [];
     for (const msgDoc of msgsSnapshot.docs) {
       const data = msgDoc.data();
-      if (data.uid !== auth.currentUser.uid && !data.readBy?.includes(auth.currentUser.uid)) {
+      // Add current user to readBy if not already there (and not own message)
+      const readBy = data.readBy || [];
+      if (data.uid !== auth.currentUser.uid && !readBy.includes(auth.currentUser.uid)) {
         batch.push(updateDoc(doc(db, 'groupMessages', groupId, 'messages', msgDoc.id), {
           readBy: arrayUnion(auth.currentUser.uid)
         }));
