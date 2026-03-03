@@ -272,15 +272,17 @@ async function appendGroupMessage(docSnap) {
     div.appendChild(timeSpan);
   }
 
-  // Read receipt indicator
+  // Read receipt indicator (exclude sender)
   const readBy = data.readBy || [];
-  if (readBy.length > 1) {
+  const otherReaders = readBy.filter(uid => uid !== auth.currentUser?.uid);
+  
+  if (otherReaders.length >= 2) {
     const readSpan = document.createElement('span');
     readSpan.className = 'read-receipt';
-    readSpan.title = `Gelesen von ${readBy.length} Personen`;
+    readSpan.title = `Gelesen von ${otherReaders.length} Personen`;
     readSpan.textContent = '✓✓';
     div.appendChild(readSpan);
-  } else if (readBy.length === 1 && readBy[0] !== auth.currentUser?.uid) {
+  } else if (otherReaders.length === 1) {
     const readSpan = document.createElement('span');
     readSpan.className = 'read-receipt';
     readSpan.title = 'Gelesen';
@@ -310,15 +312,17 @@ async function updateGroupMessage(docSnap) {
 
   // Update read receipt
   const readBy = data.readBy || [];
-  if (readBy.length > 1) {
+  const otherReaders = readBy.filter(uid => uid !== auth.currentUser?.uid);
+  
+  if (otherReaders.length >= 2) {
     if (!readReceipt) {
       readReceipt = document.createElement('span');
       readReceipt.className = 'read-receipt';
       existingMsg.appendChild(readReceipt);
     }
     readReceipt.textContent = '✓✓';
-    readReceipt.title = `Gelesen von ${readBy.length} Personen`;
-  } else if (readBy.length === 1 && readBy[0] !== auth.currentUser?.uid) {
+    readReceipt.title = `Gelesen von ${otherReaders.length} Personen`;
+  } else if (otherReaders.length === 1) {
     if (!readReceipt) {
       readReceipt = document.createElement('span');
       readReceipt.className = 'read-receipt';
