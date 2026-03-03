@@ -13,8 +13,84 @@ import { loadUserData } from './users.js';
 import {
   collection, addDoc, query, where, orderBy,
   getDocs, getDoc, doc, updateDoc, serverTimestamp,
-  onSnapshot, limit, arrayUnion, arrayRemove
+  onSnapshot, limit, arrayUnion, arrayRemove, increment
 } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+// ── Reactions ────────────────────────────────────────────────────────────────
+
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
+
+export async function toggleReaction(messageId, groupId, emoji) {
+  if (!auth.currentUser) return;
+  
+  try {
+    const msgRef = doc(db, 'groupMessages', groupId, 'messages', messageId);
+    const msgSnap = await getDoc(msgRef);
+    
+    if (!msgSnap.exists()) return;
+    
+    const data = msgSnap.data();
+    const reactions = data.reactions || {};
+    const userReactions = reactions[emoji] || [];
+    
+    if (userReactions.includes(auth.currentUser.uid)) {
+      // Remove reaction
+      const updated = userReactions.filter(uid => uid !== auth.currentUser.uid);
+      if (updated.length === 0) {
+        delete reactions[emoji];
+      } else {
+        reactions[emoji] = updated;
+      }
+    } else {
+      // Add reaction
+      if (!reactions[emoji]) reactions[emoji] = [];
+      reactions[emoji].push(auth.currentUser.uid);
+    }
+    
+    await updateDoc(msgRef, { reactions });
+  } catch (e) {
+    console.error('Error toggling reaction:', e);
+  }
+}
+
+export function showReactionPicker(messageId, groupId, button) {
+  // Remove any existing picker
+  const existing = document.querySelector('.reaction-picker');
+  if (existing) existing.remove();
+  
+  const picker = document.createElement('div');
+  picker.className = 'reaction-picker';
+  
+  REACTION_EMOJIS.forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.className = 'reaction-emoji';
+    btn.textContent = emoji;
+    btn.onclick = () => {
+      toggleReaction(messageId, groupId, emoji);
+      picker.remove();
+    };
+    picker.appendChild(btn);
+  });
+  
+  // Position picker near the button
+  const rect = button.getBoundingClientRect();
+  picker.style.position = 'fixed';
+  picker.style.left = `${rect.left}px`;
+  picker.style.top = `${rect.top - 40}px`;
+  picker.style.zIndex = '1000';
+  
+  document.body.appendChild(picker);
+  
+  // Close on click outside
+  setTimeout(() => {
+    document.addEventListener('click', function closePicker(e) {
+      if (!picker.contains(e.target) && e.target !== button) {
+        picker.remove();
+        document.removeEventListener('click', closePicker);
+      }
+    });
+  }, 100);
+}
 
 // ── Read Receipts ─────────────────────────────────────────────────────────
 
@@ -294,6 +370,34 @@ async function appendGroupMessage(docSnap) {
     div.appendChild(readSpan);
   }
 
+  // Reaction button and display
+  const reactions = data.reactions || {};
+  const reactionDiv = document.createElement('div');
+  reactionDiv.className = 'message-reactions';
+  
+  // Show existing reactions
+  Object.keys(reactions).forEach(emoji => {
+    const users = reactions[emoji];
+    if (users && users.length > 0) {
+      const reactionBadge = document.createElement('span');
+      reactionBadge.className = 'reaction-badge';
+      reactionBadge.textContent = `${emoji} ${users.length}`;
+      reactionDiv.appendChild(reactionBadge);
+    }
+  });
+  
+  // Add reaction button
+  const reactBtn = document.createElement('button');
+  reactBtn.className = 'react-btn';
+  reactBtn.textContent = '😊';
+  reactBtn.onclick = (e) => {
+    e.stopPropagation();
+    showReactionPicker(docSnap.id, currentGroup.groupId, reactBtn);
+  };
+  
+  reactionDiv.appendChild(reactBtn);
+  div.appendChild(reactionDiv);
+
   document.getElementById('groupMessages').appendChild(div);
 }
 
@@ -336,6 +440,37 @@ async function updateGroupMessage(docSnap) {
     readReceipt.textContent = '✓';
     readReceipt.title = 'Gelesen';
   }
+
+  // Update reactions
+  const reactions = data.reactions || {};
+  let reactionDiv = existingMsg.querySelector('.message-reactions');
+  
+  if (!reactionDiv) {
+    reactionDiv = document.createElement('div');
+    reactionDiv.className = 'message-reactions';
+    existingMsg.appendChild(reactionDiv);
+  } else {
+    reactionDiv.innerHTML = '';
+  }
+  
+  Object.keys(reactions).forEach(emoji => {
+    const users = reactions[emoji];
+    if (users && users.length > 0) {
+      const reactionBadge = document.createElement('span');
+      reactionBadge.className = 'reaction-badge';
+      reactionBadge.textContent = `${emoji} ${users.length}`;
+      reactionDiv.appendChild(reactionBadge);
+    }
+  });
+  
+  const reactBtn = document.createElement('button');
+  reactBtn.className = 'react-btn';
+  reactBtn.textContent = '😊';
+  reactBtn.onclick = (e) => {
+    e.stopPropagation();
+    showReactionPicker(docSnap.id, currentGroup.groupId, reactBtn);
+  };
+  reactionDiv.appendChild(reactBtn);
 }
 
 export async function sendGroupMessage() {

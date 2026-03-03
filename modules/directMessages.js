@@ -27,6 +27,77 @@ import {
   arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
+// ── Reactions for DMs ────────────────────────────────────────────────────
+
+const DM_REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
+
+export async function toggleDMReaction(messageId, chatId, emoji) {
+  if (!auth.currentUser) return;
+  
+  try {
+    const msgRef = doc(db, 'directMessages', chatId, 'messages', messageId);
+    const msgSnap = await getDoc(msgRef);
+    
+    if (!msgSnap.exists()) return;
+    
+    const data = msgSnap.data();
+    const reactions = data.reactions || {};
+    const userReactions = reactions[emoji] || [];
+    
+    if (userReactions.includes(auth.currentUser.uid)) {
+      const updated = userReactions.filter(uid => uid !== auth.currentUser.uid);
+      if (updated.length === 0) {
+        delete reactions[emoji];
+      } else {
+        reactions[emoji] = updated;
+      }
+    } else {
+      if (!reactions[emoji]) reactions[emoji] = [];
+      reactions[emoji].push(auth.currentUser.uid);
+    }
+    
+    await updateDoc(msgRef, { reactions });
+  } catch (e) {
+    console.error('Error toggling DM reaction:', e);
+  }
+}
+
+export function showDMReactionPicker(messageId, chatId, button) {
+  const existing = document.querySelector('.reaction-picker');
+  if (existing) existing.remove();
+  
+  const picker = document.createElement('div');
+  picker.className = 'reaction-picker';
+  
+  DM_REACTION_EMOJIS.forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.className = 'reaction-emoji';
+    btn.textContent = emoji;
+    btn.onclick = () => {
+      toggleDMReaction(messageId, chatId, emoji);
+      picker.remove();
+    };
+    picker.appendChild(btn);
+  });
+  
+  const rect = button.getBoundingClientRect();
+  picker.style.position = 'fixed';
+  picker.style.left = `${rect.left}px`;
+  picker.style.top = `${rect.top - 40}px`;
+  picker.style.zIndex = '1000';
+  
+  document.body.appendChild(picker);
+  
+  setTimeout(() => {
+    document.addEventListener('click', function closePicker(e) {
+      if (!picker.contains(e.target) && e.target !== button) {
+        picker.remove();
+        document.removeEventListener('click', closePicker);
+      }
+    });
+  }, 100);
+}
+
 // ── Read Receipts for DMs ─────────────────────────────────────────────────
 
 async function markDMAsRead(messageId, chatId) {
@@ -372,6 +443,33 @@ async function appendDMMessage(docSnap) {
     div.appendChild(readSpan);
   }
 
+
+  // Reaction button and display
+  const reactions = data.reactions || {};
+  const reactionDiv = document.createElement('div');
+  reactionDiv.className = 'message-reactions';
+  
+  Object.keys(reactions).forEach(emoji => {
+    const users = reactions[emoji];
+    if (users && users.length > 0) {
+      const reactionBadge = document.createElement('span');
+      reactionBadge.className = 'reaction-badge';
+      reactionBadge.textContent = `${emoji} ${users.length}`;
+      reactionDiv.appendChild(reactionBadge);
+    }
+  });
+  
+  const reactBtn = document.createElement('button');
+  reactBtn.className = 'react-btn';
+  reactBtn.textContent = '😊';
+  reactBtn.onclick = (e) => {
+    e.stopPropagation();
+    const chatId = createChatId(auth.currentUser.uid, currentDMUser.uid);
+    showDMReactionPicker(docSnap.id, chatId, reactBtn);
+  };
+  
+  reactionDiv.appendChild(reactBtn);
+  div.appendChild(reactionDiv);
   document.getElementById('dmMessages').appendChild(div);
 }
 
@@ -406,6 +504,38 @@ async function updateDMMessage(docSnap) {
     readReceipt.textContent = otherReaders.length >= 2 ? '✓✓' : '✓';
     readReceipt.title = otherReaders.length >= 2 ? `Gelesen von ${otherReaders.length}` : 'Gelesen';
   }
+
+  // Update reactions
+  const reactions = data.reactions || {};
+  let reactionDiv = existingMsg.querySelector('.message-reactions');
+  
+  if (!reactionDiv) {
+    reactionDiv = document.createElement('div');
+    reactionDiv.className = 'message-reactions';
+    existingMsg.appendChild(reactionDiv);
+  } else {
+    reactionDiv.innerHTML = '';
+  }
+  
+  Object.keys(reactions).forEach(emoji => {
+    const users = reactions[emoji];
+    if (users && users.length > 0) {
+      const reactionBadge = document.createElement('span');
+      reactionBadge.className = 'reaction-badge';
+      reactionBadge.textContent = `${emoji} ${users.length}`;
+      reactionDiv.appendChild(reactionBadge);
+    }
+  });
+  
+  const reactBtn = document.createElement('button');
+  reactBtn.className = 'react-btn';
+  reactBtn.textContent = '😊';
+  reactBtn.onclick = (e) => {
+    e.stopPropagation();
+    const chatId = createChatId(auth.currentUser.uid, currentDMUser.uid);
+    showDMReactionPicker(docSnap.id, chatId, reactBtn);
+  };
+  reactionDiv.appendChild(reactBtn);
 }
 
 export async function sendDMMessage() {

@@ -115,11 +115,11 @@ service cloud.firestore {
         && request.resource.data.text.size() <= 1000;
       
       // Only message sender can update/delete their own messages
-      // Also allow updating readBy for read receipts
+      // Also allow updating readBy and reactions
       allow update: if isSignedIn() 
         && (resource.data.uid == request.auth.uid 
-            || (request.resource.data.keys() has 'readBy' 
-                && request.auth.uid in request.resource.data.readBy));
+            || ('readBy' in request.resource.data && request.auth.uid in request.resource.data.readBy)
+            || 'reactions' in request.resource.data);
       allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
     }
     
@@ -167,11 +167,11 @@ service cloud.firestore {
         && request.resource.data.text.size() <= 1000;
       
       // Only message sender can update/delete their own messages
-      // Also allow updating readBy for read receipts
+      // Also allow updating readBy and reactions
       allow update: if isSignedIn() 
         && (resource.data.uid == request.auth.uid 
-            || (request.resource.data.keys() has 'readBy' 
-                && request.auth.uid in request.resource.data.readBy));
+            || ('readBy' in request.resource.data && request.auth.uid in request.resource.data.readBy)
+            || 'reactions' in request.resource.data);
       allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
     }
     
