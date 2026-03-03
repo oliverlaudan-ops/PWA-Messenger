@@ -230,3 +230,35 @@ window.addEventListener('userLoggedIn', async () => {
 });
 
 console.log('✅ App initialized - modular structure loaded');
+
+// Dark Mode Toggle
+window.toggleDarkMode = function() {
+  const html = document.documentElement;
+  const toggleBtn = document.getElementById("themeToggle");
+  const currentTheme = html.getAttribute("data-theme");
+  
+  if (currentTheme === "dark") {
+    html.setAttribute("data-theme", "light");
+    localStorage.setItem("theme", "light");
+    if (toggleBtn) toggleBtn.textContent = "🌙";
+  } else {
+    html.setAttribute("data-theme", "dark");
+    localStorage.setItem("theme", "dark");
+    if (toggleBtn) toggleBtn.textContent = "☀️";
+  }
+};
+
+// Load saved theme on startup
+window.addEventListener("load", () => {
+  const savedTheme = localStorage.getItem("theme");
+  const toggleBtn = document.getElementById("themeToggle");
+  
+  if (savedTheme === "dark") {
+    document.documentElement.setAttribute("data-theme", "dark");
+    if (toggleBtn) toggleBtn.textContent = "☀️";
+  } else if (savedTheme === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+    if (toggleBtn) toggleBtn.textContent = "🌙";
+  }
+});
+
