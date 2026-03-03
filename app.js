@@ -10,7 +10,8 @@ import {
   loadGroupList, 
   openGroupChat, 
   closeGroupChat, 
-  sendGroupMessage 
+  sendGroupMessage,
+  markAllGroupMessagesAsRead
 } from './modules/groups.js';
 import { 
   loadDMChatList, 

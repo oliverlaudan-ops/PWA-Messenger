@@ -23,8 +23,33 @@ import {
   updateDoc,
   serverTimestamp,
   onSnapshot,
-  limit
+  limit,
+  arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+// ── Read Receipts for DMs ─────────────────────────────────────────────────
+
+async function markDMAsRead(messageId, chatId) {
+  if (!auth.currentUser) return;
+  
+  try {
+    const msgRef = doc(db, 'directMessages', chatId, 'messages', messageId);
+    const msgSnap = await getDoc(msgRef);
+    
+    if (!msgSnap.exists()) return;
+    
+    const data = msgSnap.data();
+    const readBy = data.readBy || [];
+    
+    if (!readBy.includes(auth.currentUser.uid)) {
+      await updateDoc(msgRef, {
+        readBy: arrayUnion(auth.currentUser.uid)
+      });
+    }
+  } catch (e) {
+    console.error('Error marking DM as read:', e);
+  }
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -276,6 +301,14 @@ function loadDMMessages(otherUserId) {
 
             if (!hasResetUnreadForCurrentChat) {
               await resetUnreadCount(chatId, auth.currentUser.uid);
+              // Mark all messages as read
+              const msgsQuery = await getDocs(query(
+                collection(db, 'directMessages', chatId, 'messages'),
+                where('uid', '!=', auth.currentUser.uid)
+              ));
+              for (const msgDoc of msgsQuery.docs) {
+                await markDMAsRead(msgDoc.id, chatId);
+              }
               setHasResetUnread(true);
             }
           }
@@ -323,6 +356,16 @@ async function appendDMMessage(docSnap) {
     div.appendChild(timeSpan);
   }
 
+  // Read receipt for DMs (single/double check)
+  const readBy = data.readBy || [];
+  if (readBy.length > 1 || (readBy.length === 1 && readBy[0] === auth.currentUser?.uid)) {
+    const readSpan = document.createElement('span');
+    readSpan.className = 'read-receipt';
+    readSpan.textContent = '✓✓';
+    readSpan.title = 'Gelesen';
+    div.appendChild(readSpan);
+  }
+
   document.getElementById('dmMessages').appendChild(div);
 }
 
@@ -332,6 +375,7 @@ async function updateDMMessage(docSnap) {
 
   const data = docSnap.data();
   let timeSpan = existingMsg.querySelector('.time');
+  let readReceipt = existingMsg.querySelector('.read-receipt');
 
   if (data.createdAt && !timeSpan) {
     timeSpan = document.createElement('span');
@@ -340,6 +384,18 @@ async function updateDMMessage(docSnap) {
     existingMsg.appendChild(timeSpan);
   } else if (data.createdAt && timeSpan) {
     timeSpan.textContent = formatTimestamp(data.createdAt);
+  }
+
+  // Update read receipt
+  const readBy = data.readBy || [];
+  if ((readBy.length > 1) || (readBy.length === 1 && readBy[0] === auth.currentUser?.uid)) {
+    if (!readReceipt) {
+      readReceipt = document.createElement('span');
+      readReceipt.className = 'read-receipt';
+      existingMsg.appendChild(readReceipt);
+    }
+    readReceipt.textContent = '✓✓';
+    readReceipt.title = 'Gelesen';
   }
 }
 
@@ -354,7 +410,8 @@ export async function sendDMMessage() {
       text,
       uid: auth.currentUser.uid,
       username: currentUserData.username,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      readBy: [auth.currentUser.uid]
     });
 
     await updateChatMetadata(chatId, text, [auth.currentUser.uid, currentDMUser.uid], auth.currentUser.uid);

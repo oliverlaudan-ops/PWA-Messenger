@@ -13,8 +13,58 @@ import { loadUserData } from './users.js';
 import {
   collection, addDoc, query, where, orderBy,
   getDocs, getDoc, doc, updateDoc, serverTimestamp,
-  onSnapshot, limit
+  onSnapshot, limit, arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+// ── Read Receipts ─────────────────────────────────────────────────────────
+
+export async function markGroupMessageAsRead(messageId, groupId) {
+  if (!auth.currentUser) return;
+  
+  try {
+    const msgRef = doc(db, 'groupMessages', groupId, 'messages', messageId);
+    const msgSnap = await getDoc(msgRef);
+    
+    if (!msgSnap.exists()) return;
+    
+    const data = msgSnap.data();
+    const readBy = data.readBy || [];
+    
+    // Add user to readBy if not already there
+    if (!readBy.includes(auth.currentUser.uid)) {
+      await updateDoc(msgRef, {
+        readBy: arrayUnion(auth.currentUser.uid)
+      });
+    }
+  } catch (e) {
+    console.error('Error marking message as read:', e);
+  }
+}
+
+export async function markAllGroupMessagesAsRead(groupId) {
+  if (!auth.currentUser) return;
+  
+  try {
+    const msgsSnapshot = await getDocs(query(
+      collection(db, 'groupMessages', groupId, 'messages'),
+      where('readBy', 'not-in', [auth.currentUser.uid])
+    ));
+    
+    const batch = [];
+    for (const msgDoc of msgsSnapshot.docs) {
+      const data = msgDoc.data();
+      if (data.uid !== auth.currentUser.uid && !data.readBy?.includes(auth.currentUser.uid)) {
+        batch.push(updateDoc(doc(db, 'groupMessages', groupId, 'messages', msgDoc.id), {
+          readBy: arrayUnion(auth.currentUser.uid)
+        }));
+      }
+    }
+    
+    await Promise.all(batch);
+  } catch (e) {
+    console.error('Error marking all messages as read:', e);
+  }
+}
 
 // ── Modal helpers ────────────────────────────────────────────────────────────
 
@@ -174,6 +224,7 @@ function loadGroupMessages(groupId) {
 
             if (!hasResetUnreadForCurrentChat) {
               await resetGroupUnreadCount(groupId, auth.currentUser.uid);
+              await markAllGroupMessagesAsRead(groupId);
               setHasResetUnread(true);
             }
           }
@@ -221,6 +272,22 @@ async function appendGroupMessage(docSnap) {
     div.appendChild(timeSpan);
   }
 
+  // Read receipt indicator
+  const readBy = data.readBy || [];
+  if (readBy.length > 1) {
+    const readSpan = document.createElement('span');
+    readSpan.className = 'read-receipt';
+    readSpan.title = `Gelesen von ${readBy.length} Personen`;
+    readSpan.textContent = '✓✓';
+    div.appendChild(readSpan);
+  } else if (readBy.length === 1 && readBy[0] !== auth.currentUser?.uid) {
+    const readSpan = document.createElement('span');
+    readSpan.className = 'read-receipt';
+    readSpan.title = 'Gelesen';
+    readSpan.textContent = '✓';
+    div.appendChild(readSpan);
+  }
+
   document.getElementById('groupMessages').appendChild(div);
 }
 
@@ -230,6 +297,7 @@ async function updateGroupMessage(docSnap) {
 
   const data = docSnap.data();
   let timeSpan = existingMsg.querySelector('.time');
+  let readReceipt = existingMsg.querySelector('.read-receipt');
 
   if (data.createdAt && !timeSpan) {
     timeSpan = document.createElement('span');
@@ -238,6 +306,26 @@ async function updateGroupMessage(docSnap) {
     existingMsg.appendChild(timeSpan);
   } else if (data.createdAt && timeSpan) {
     timeSpan.textContent = formatTimestamp(data.createdAt);
+  }
+
+  // Update read receipt
+  const readBy = data.readBy || [];
+  if (readBy.length > 1) {
+    if (!readReceipt) {
+      readReceipt = document.createElement('span');
+      readReceipt.className = 'read-receipt';
+      existingMsg.appendChild(readReceipt);
+    }
+    readReceipt.textContent = '✓✓';
+    readReceipt.title = `Gelesen von ${readBy.length} Personen`;
+  } else if (readBy.length === 1 && readBy[0] !== auth.currentUser?.uid) {
+    if (!readReceipt) {
+      readReceipt = document.createElement('span');
+      readReceipt.className = 'read-receipt';
+      existingMsg.appendChild(readReceipt);
+    }
+    readReceipt.textContent = '✓';
+    readReceipt.title = 'Gelesen';
   }
 }
 
@@ -252,7 +340,8 @@ export async function sendGroupMessage() {
       text,
       uid: auth.currentUser.uid,
       username: currentUserData.username,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      readBy: [auth.currentUser.uid] // Initialize readBy with sender
     });
 
     await updateGroupMetadata(groupId, text, auth.currentUser.uid);

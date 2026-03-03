@@ -796,3 +796,14 @@ textarea {
     font-size: 13px;
   }
 }
+
+/* Read Receipts */
+.read-receipt {
+  font-size: 11px;
+  color: #4caf50;
+  margin-left: 8px;
+}
+
+[data-theme="dark"] .read-receipt {
+  color: #22c55e;
+}
