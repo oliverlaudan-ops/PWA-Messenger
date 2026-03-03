@@ -262,3 +262,16 @@ window.addEventListener("load", () => {
   }
 });
 
+
+// Add touch support for theme toggle
+window.addEventListener('DOMContentLoaded', () => {
+  const themeBtn = document.getElementById('themeToggle');
+  if (themeBtn) {
+    // Prevent any default touch behavior
+    themeBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleDarkMode();
+    }, { passive: false });
+  }
+});

@@ -74,7 +74,7 @@
         <h1>💬 PWA Messenger</h1>
         <div style="display: flex; align-items: center; gap: 10px;">
           <span id="userInfo" class="user-info-header"></span>
-          <button id="themeToggle" onclick="toggleDarkMode()" title="Dark Mode umschalten">🌙</button>
+          <button type="button" id="themeToggle" onclick="toggleDarkMode(); event.stopPropagation();" ontouchstart title="Dark Mode umschalten">🌙</button>
           <button id="notifyBtn" onclick="requestNotifications()" 
                   style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px;"
                   title="Benachrichtigungen aktivieren">🔕</button>
