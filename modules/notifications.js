@@ -17,6 +17,12 @@ let notificationSettings = {
   doNotDisturbUntil: null
 };
 
+// User privacy settings (DM and blocking)
+let userPrivacySettings = {
+  dmSettings: 'friends_only', // 'everyone' or 'friends_only'
+  blockedUsers: {} // uid: true
+};
+
 // VAPID Key
 const VAPID_KEY = 'BJN1R7PuO5Td7DNzUOOoZvxrlKht9I06-qaa8XnR11q3DKEFHagPYjRRcdwFVY7jo7N6eG0fvaP5hTr0YtMCL1o';
 
@@ -286,6 +292,14 @@ async function loadNotificationSettings() {
           ...data.notificationSettings
         };
       }
+      
+      // Load privacy settings
+      if (data.dmSettings) {
+        userPrivacySettings.dmSettings = data.dmSettings;
+      }
+      if (data.blockedUsers) {
+        userPrivacySettings.blockedUsers = data.blockedUsers;
+      }
     }
   } catch (error) {
     console.error('Error loading notification settings:', error);
@@ -301,13 +315,41 @@ async function saveNotificationSettings() {
 
     const userRef = doc(db, 'users', auth.currentUser.uid);
     await updateDoc(userRef, {
-      notificationSettings: notificationSettings
+      notificationSettings,
+      dmSettings: userPrivacySettings.dmSettings,
+      blockedUsers: userPrivacySettings.blockedUsers
     });
-
-    console.log('✅ Notification settings saved');
   } catch (error) {
     console.error('Error saving notification settings:', error);
   }
+}
+
+// Export privacy settings functions
+export function getPrivacySettings() {
+  return { ...userPrivacySettings };
+}
+
+export async function setDmSettings(mode) {
+  if (mode !== 'everyone' && mode !== 'friends_only') {
+    console.error('Invalid DM mode:', mode);
+    return;
+  }
+  userPrivacySettings.dmSettings = mode;
+  await saveNotificationSettings();
+}
+
+export async function blockUser(uid) {
+  userPrivacySettings.blockedUsers[uid] = true;
+  await saveNotificationSettings();
+}
+
+export async function unblockUser(uid) {
+  delete userPrivacySettings.blockedUsers[uid];
+  await saveNotificationSettings();
+}
+
+export function getBlockedUsers() {
+  return { ...userPrivacySettings.blockedUsers };
 }
 
 /**

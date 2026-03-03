@@ -43,7 +43,12 @@ import {
   isDoNotDisturbActive,
   getNotificationSettings,
   updateAppBadge,
-  clearAppBadge
+  clearAppBadge,
+  getPrivacySettings,
+  setDmSettings,
+  blockUser,
+  unblockUser,
+  getBlockedUsers
 } from './modules/notifications.js';
 import {
   showMuteMenu,
@@ -93,6 +98,13 @@ window.isDoNotDisturbActive = isDoNotDisturbActive;
 window.getNotificationSettings = getNotificationSettings;
 window.showNotificationSettings = showNotificationSettings;
 window.closeNotificationSettings = closeNotificationSettings;
+
+// User Settings Modal
+window.showUserSettings = showUserSettings;
+window.closeUserSettings = closeUserSettings;
+window.saveDmSettings = saveDmSettings;
+window.toggleNotificationsFromModal = toggleNotificationsFromModal;
+window.unblockUserFromModal = unblockUserFromModal;
 
 // Chat Settings functions
 window.toggleChatMute = toggleChatMute;
@@ -164,6 +176,84 @@ function updateNotificationSettingsUI() {
       dndStatus.textContent = 'Inaktiv';
     }
   }
+}
+
+// User Settings Modal Functions
+async function showUserSettings() {
+  const modal = document.getElementById('userSettingsModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    await updateUserSettingsUI();
+  }
+}
+
+function closeUserSettings() {
+  const modal = document.getElementById('userSettingsModal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+async function updateUserSettingsUI() {
+  // Update DM settings
+  const privacy = getPrivacySettings();
+  const dmRadios = document.getElementsByName('dmSettings');
+  for (const radio of dmRadios) {
+    radio.checked = radio.value === privacy.dmSettings;
+  }
+  
+  // Update notification toggle
+  const notifSettings = getNotificationSettings();
+  const notifToggle = document.getElementById('notificationsEnabled');
+  if (notifToggle) {
+    notifToggle.checked = notifSettings.enabled;
+  }
+  
+  // Update blocked users list
+  await updateBlockedUsersList();
+}
+
+async function updateBlockedUsersList() {
+  const listContainer = document.getElementById('blockedUsersList');
+  if (!listContainer) return;
+  
+  const blocked = getBlockedUsers();
+  const blockedUids = Object.keys(blocked);
+  
+  if (blockedUids.length === 0) {
+    listContainer.innerHTML = '<p class="no-blocked">Keine blockierten Benutzer</p>';
+    return;
+  }
+  
+  // Load user data for each blocked user
+  const { loadUserData } = await import('./modules/users.js');
+  
+  let html = '';
+  for (const uid of blockedUids) {
+    const userData = await loadUserData(uid);
+    const username = userData?.username || 'Unknown';
+    html += `
+      <div class="blocked-user-item">
+        <span>@${username}</span>
+        <button class="btn btn-small" onclick="unblockUserFromModal('${uid}')">Entblocken</button>
+      </div>
+    `;
+  }
+  
+  listContainer.innerHTML = html;
+}
+
+async function saveDmSettings(mode) {
+  await setDmSettings(mode);
+}
+
+async function toggleNotificationsFromModal(enabled) {
+  await toggleNotifications(enabled);
+}
+
+async function unblockUserFromModal(uid) {
+  await unblockUser(uid);
+  await updateBlockedUsersList();
 }
 
 // Event listeners for cross-module communication

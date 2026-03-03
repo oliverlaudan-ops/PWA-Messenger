@@ -155,8 +155,9 @@
         </div>
       </div>
 
-      <!-- Footer with Logout -->
+      <!-- Footer with Logout and Settings -->
       <div class="chat-footer">
+        <button class="btn btn-secondary btn-small" onclick="showUserSettings()">⚙️ Einstellungen</button>
         <button class="btn btn-danger btn-small" onclick="logout()">Logout</button>
       </div>
     </div>
@@ -215,6 +216,52 @@
         </div>
         <div class="members-count">
           <strong id="membersCount">0 Mitglieder</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Settings Modal -->
+  <div id="userSettingsModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚙️ Einstellungen</h2>
+        <button class="close-btn" onclick="closeUserSettings()">×</button>
+      </div>
+      <div class="modal-body">
+        <!-- DM Settings -->
+        <div class="settings-section">
+          <h3>📬 Direktnachrichten</h3>
+          <p class="settings-description">Wer darf dir DMs schicken?</p>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="dmSettings" value="everyone" onchange="saveDmSettings(this.value)">
+              <span>🌍 Everyone</span>
+              <span class="radio-desc">Jeder kann dir Nachrichten schicken</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="dmSettings" value="friends_only" onchange="saveDmSettings(this.value)">
+              <span>🔒 Freunde</span>
+              <span class="radio-desc">Nur User, die du bereits kennst</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Blocked Users -->
+        <div class="settings-section">
+          <h3>🚫 Blockierte Benutzer</h3>
+          <div id="blockedUsersList" class="blocked-list">
+            <p class="no-blocked">Keine blockierten Benutzer</p>
+          </div>
+        </div>
+        
+        <!-- Notification Settings -->
+        <div class="settings-section">
+          <h3>🔔 Benachrichtigungen</h3>
+          <label class="toggle-label">
+            <span>Benachrichtigungen aktivieren</span>
+            <input type="checkbox" id="notificationsEnabled" onchange="toggleNotificationsFromModal(this.checked)">
+          </label>
         </div>
       </div>
     </div>

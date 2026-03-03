@@ -106,9 +106,10 @@ service cloud.firestore {
       allow read: if isSignedIn() 
         && isParticipant(get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
       
-      // Only participants can send messages
+      // Only participants can send messages (or bot)
       allow create: if isSignedIn() 
-        && isParticipant(get(/databases/$(database)/documents/chats/$(chatId)).data.participants)
+        && (isParticipant(get(/databases/$(database)/documents/chats/$(chatId)).data.participants)
+            || isBot())
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
@@ -152,15 +153,26 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isGroupCreator(resource.data);
     }
     
+    // Helper function to check if sender is bot
+    function isBot() {
+      return request.auth != null && request.auth.uid.startsWith('bot_');
+    }
+    
+    // Helper to check if bot should be allowed (for bot responses)
+    function isBotResponse() {
+      return request.auth != null && request.auth.uid.startsWith('bot_') && 'isBotMessage' in request.resource.data;
+    }
+    
     // Group messages
     match /groupMessages/{groupId}/messages/{messageId} {
       // Only group members can read messages
       allow read: if isSignedIn() 
         && isGroupMember(get(/databases/$(database)/documents/groups/$(groupId)).data);
       
-      // Only group members can send messages
+      // Only group members can send messages (or bot responding to commands)
       allow create: if isSignedIn() 
-        && isGroupMember(get(/databases/$(database)/documents/groups/$(groupId)).data)
+        && (isGroupMember(get(/databases/$(database)/documents/groups/$(groupId)).data)
+            || (isBot() && 'isBotMessage' in request.resource.data))
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
